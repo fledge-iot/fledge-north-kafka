@@ -14,4 +14,4 @@ The configuration of the *Kafka* plugin is very simple, consisting of three para
 
   - **Bootstrap Brokers**: A comma separate list of Kafka brokers to use to establish a connection to the Kafka system.
   - **Kafka Topic**: The Kafka topic to which all data is sent.
-  - **Data Source**: Which Fledge data to send to Kafa; Readings or Fledge Statistics.
+  - **Data Source**: Which Fledge data to send to Kafka; Readings or Fledge Statistics.
