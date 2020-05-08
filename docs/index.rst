@@ -1,8 +1,8 @@
 .. Images
 .. |kafka| image:: images/kafka.jpg
 
-Fledge Kafka Producer
-=====================
+Kafka Producer
+==============
 
 The *fledge-north-kafka* plugin sends data from Fledge to the an Apache Kafka. Fledge acts as a Kafka producer, sending reading data to Kafka. This implementation is a simplified producer that sends all data on a single Kafka topic. Each message contains an asset name, timestamp and set of readings values as a JSON document.
 
