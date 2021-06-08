@@ -114,8 +114,8 @@ uint32_t	sent = 0;
 	for (auto it = readings.cbegin(); it != readings.cend(); ++it)
 	{
 		string assetName = (*it)->getAssetName();
-		payload << "{ \"asset\" : \"" << assetName << "\", ";
-		payload << "\"timestamp\" : \"" << (*it)->getAssetDateTime(Reading::FMT_ISO8601) << "\", ";
+		payload << "{ \"asset\" : " << quote(assetName) << ", ";
+		payload << "\"timestamp\" : " << quote((*it)->getAssetDateTime(Reading::FMT_ISO8601)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
@@ -124,8 +124,8 @@ uint32_t	sent = 0;
 			{
 				payload << ",";
 			}
-			payload << "\"" << (*dit)->getName();
-			payload << "\" : \"" << (*dit)->getData().toString() << "\"";
+			payload << "" << quote((*dit)->getName());
+			payload << " : " << quote((*dit)->getData().toString()) << "";
 		
 		}
 		payload << "}";
@@ -134,4 +134,36 @@ uint32_t	sent = 0;
 		sent++;
 	}
 	return sent;
+}
+
+/**
+ * Quote a string, escaping any quote characters appearing in the string
+ *
+ * @param orig	The string to quote
+ * @return A quoted string
+ */
+string Kafka::quote(const string& orig)
+{
+	string rval("\"");
+	size_t pos = 0, start = 0;
+
+	if ((pos = orig.find_first_of("\"", start)) != std::string::npos)
+	{
+		const char *p1 = orig.c_str();
+		while (*p1)
+		{
+			if (*p1 == '\"')
+			{
+				rval += '\\';
+			}
+			rval += *p1;
+			p1++;
+		}
+	}
+	else
+	{
+		rval += orig;
+	}
+	rval += "\"";
+	return rval;
 }

@@ -26,6 +26,7 @@ class Kafka
 		uint32_t		send(const std::vector<Reading *> readings);
 		void			pollThread();
 	private:
+		std::string		quote(const std::string& orig);
 		volatile bool		m_running;
 		std::string		m_topic;
 		std::thread		*m_thread;
