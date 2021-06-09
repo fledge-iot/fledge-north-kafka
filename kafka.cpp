@@ -108,14 +108,14 @@ Kafka::pollThread()
 uint32_t
 Kafka::send(const vector<Reading *> readings)
 {
-ostringstream	payload;
 uint32_t	sent = 0;
 
 	for (auto it = readings.cbegin(); it != readings.cend(); ++it)
 	{
+		ostringstream	payload;
 		string assetName = (*it)->getAssetName();
 		payload << "{ \"asset\" : " << quote(assetName) << ", ";
-		payload << "\"timestamp\" : " << quote((*it)->getAssetDateTime(Reading::FMT_ISO8601)) << ", ";
+		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601, true)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
@@ -124,8 +124,8 @@ uint32_t	sent = 0;
 			{
 				payload << ",";
 			}
-			payload << "" << quote((*dit)->getName());
-			payload << " : " << quote((*dit)->getData().toString()) << "";
+			payload << quote((*dit)->getName());
+			payload << " : " << quote((*dit)->getData().toString());
 		
 		}
 		payload << "}";
