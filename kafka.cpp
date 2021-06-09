@@ -10,6 +10,8 @@
 #include <kafka.h>
 #include <logger.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
 using namespace	std;
 
@@ -54,6 +56,12 @@ char	errstr[512];
 		Logger::getLogger()->fatal(errstr);
 		throw exception();
 	}
+
+#if SET_LOG
+	// Enable extended syslog debugging. Note this has the side effect 
+	// of changing the name of the applicaiton in syslog
+	rd_kafka_conf_set_log_cb(m_conf, rd_kafka_log_syslog);
+#endif
 
 	rd_kafka_conf_set_dr_msg_cb(m_conf, dr_msg_cb);
 	m_rk = rd_kafka_new(RD_KAFKA_PRODUCER, m_conf, errstr, sizeof(errstr));
@@ -129,8 +137,13 @@ uint32_t	sent = 0;
 		
 		}
 		payload << "}";
-		rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
-			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL);
+		Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
+		if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+		{
+			Logger::getLogger()->error("Failed to send dats to Kafka: %s", strerror(errno));
+			return sent;
+		}
 		sent++;
 	}
 	return sent;
