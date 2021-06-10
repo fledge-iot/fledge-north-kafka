@@ -133,7 +133,16 @@ uint32_t	sent = 0;
 				payload << ",";
 			}
 			payload << quote((*dit)->getName());
-			payload << " : " << quote((*dit)->getData().toString());
+			DatapointValue dpv = (*dit)->getData();
+			switch (dpv.getType())
+			{
+				case DatapointValue::T_STRING:
+					payload << " : " << quote(dpv.toStringValue());
+					break;
+				default:
+					payload << " : " << quote(dpv.toString());
+					break;
+			}
 		
 		}
 		payload << "}";
