@@ -25,6 +25,7 @@ class Kafka
 		~Kafka();
 		uint32_t		send(const std::vector<Reading *> readings);
 		void			pollThread();
+		void			sendJSONObjects(bool arg) { m_objects = arg; };
 	private:
 		std::string		quote(const std::string& orig);
 		volatile bool		m_running;
@@ -33,5 +34,6 @@ class Kafka
 		rd_kafka_t		*m_rk;
 		rd_kafka_topic_t	*m_rkt;
 		rd_kafka_conf_t		*m_conf;
+		bool			m_objects;
 };
 #endif
