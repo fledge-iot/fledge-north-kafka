@@ -12,8 +12,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <rapidjson/document.h>
 
 using namespace	std;
+using namespace rapidjson;
 
 /**
  * Callback for asynchronous producer results.
@@ -45,7 +47,7 @@ static void pollThreadWrapper(Kafka *kafka)
  * @param topic		THe Kafka topic to publish on
  */
 Kafka::Kafka(const string& brokers, const string& topic) :
-	m_topic(topic), m_running(true)
+	m_topic(topic), m_running(true), m_objects(false)
 {
 char	errstr[512];
 
@@ -137,8 +139,27 @@ uint32_t	sent = 0;
 			switch (dpv.getType())
 			{
 				case DatapointValue::T_STRING:
-					payload << " : " << quote(dpv.toStringValue());
+					{
+					string value = dpv.toStringValue();
+					if (m_objects)
+					{
+						Document d;
+						d.Parse(value.c_str());
+						if (!d.HasParseError())
+						{
+							payload << " : " << value;
+						}
+						else
+						{
+							payload << " : " << quote(value);
+						}
+					}
+					else
+					{
+						payload << " : " << quote(value);
+					}
 					break;
+					}
 				default:
 					payload << " : " << quote(dpv.toString());
 					break;
@@ -174,7 +195,7 @@ string Kafka::quote(const string& orig)
 		const char *p1 = orig.c_str();
 		while (*p1)
 		{
-			if (*p1 == '\"')
+			if (*p1 == '\"' || *p1 == '\\')
 			{
 				rval += '\\';
 			}
