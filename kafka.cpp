@@ -125,7 +125,7 @@ uint32_t	sent = 0;
 		ostringstream	payload;
 		string assetName = (*it)->getAssetName();
 		payload << "{ \"asset\" : " << quote(assetName) << ", ";
-		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601, true)) << ", ";
+		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601MS, true)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
