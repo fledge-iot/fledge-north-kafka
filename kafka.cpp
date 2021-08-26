@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <string.h>
 #include <rapidjson/document.h>
+#include <syslog.h>
 
 using namespace	std;
 using namespace rapidjson;
@@ -26,6 +27,12 @@ static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void 
 	{
                 Logger::getLogger()->error("Kafka message delivery failed: %s\n",
                         rd_kafka_err2str(rkmessage->err));
+	}
+	else
+	{
+                Logger::getLogger()->debug("Kafka message delivered");
+		Kafka *kafka = (Kafka *)opaque;
+		kafka->success();
 	}
 }
 
@@ -58,14 +65,17 @@ char	errstr[512];
 		Logger::getLogger()->fatal(errstr);
 		throw exception();
 	}
+	if (rd_kafka_conf_set(m_conf, "request.required.acks", "all",
+                              errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+	{
+		Logger::getLogger()->fatal(errstr);
+		throw exception();
+	}
 
-#if SET_LOG
-	// Enable extended syslog debugging. Note this has the side effect 
-	// of changing the name of the applicaiton in syslog
-	rd_kafka_conf_set_log_cb(m_conf, rd_kafka_log_syslog);
-#endif
+	rd_kafka_conf_set_log_cb(m_conf, logCallback);
 
 	rd_kafka_conf_set_dr_msg_cb(m_conf, dr_msg_cb);
+	rd_kafka_conf_set_opaque(m_conf, this);
 	m_rk = rd_kafka_new(RD_KAFKA_PRODUCER, m_conf, errstr, sizeof(errstr));
 	if (!m_rk)
 	{
@@ -97,6 +107,35 @@ Kafka::~Kafka()
 }
 
 /**
+ * Log cllback to add rdkafka messages to the syslog
+ */
+void Kafka::logCallback(const rd_kafka_t *rk, int level, const char *facility, const char *buf)
+{
+	Logger *logger = Logger::getLogger();
+	switch (level)
+	{
+		case LOG_EMERG:
+		case LOG_ALERT:
+		case LOG_CRIT:
+			logger->fatal(buf);
+			break;
+		case LOG_ERR:
+			logger->error(buf);
+			break;
+		case LOG_WARNING:
+			logger->warn(buf);
+			break;
+		case LOG_NOTICE:
+		case LOG_INFO:
+			logger->info(buf);
+			break;
+		case LOG_DEBUG:
+			logger->debug(buf);
+			break;
+	}
+}
+
+/**
  * Polling thread used to collect delivery status
  */
 void
@@ -118,10 +157,14 @@ Kafka::pollThread()
 uint32_t
 Kafka::send(const vector<Reading *> readings)
 {
-uint32_t	sent = 0;
 
+	Logger::getLogger()->debug("Kafka send called");
+	m_sent = 0;
+
+	int cnt = 0;
 	for (auto it = readings.cbegin(); it != readings.cend(); ++it)
 	{
+		cnt++;
 		ostringstream	payload;
 		string assetName = (*it)->getAssetName();
 		payload << "{ \"asset\" : " << quote(assetName) << ", ";
@@ -171,12 +214,18 @@ uint32_t	sent = 0;
 		if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
 		{
-			Logger::getLogger()->error("Failed to send dats to Kafka: %s", strerror(errno));
-			return sent;
+			Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
+			break;
 		}
-		sent++;
+		rd_kafka_poll(m_rk, 0);
 	}
-	return sent;
+	while (rd_kafka_outq_len(m_rk) > 0)
+	{
+		rd_kafka_poll(m_rk, 0);
+		rd_kafka_flush(m_rk, 1000);
+	}
+	Logger::getLogger()->debug("Return with %d messages sent from %d", m_sent, cnt);
+	return m_sent;
 }
 
 /**
