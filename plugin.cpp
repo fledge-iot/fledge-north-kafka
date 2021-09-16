@@ -26,7 +26,7 @@ using namespace rapidjson;
 /**
  * Plugin specific default configuration
  */
-const char *default_config = QUOTE({
+static const char *default_config = QUOTE({
 	"plugin": {
 		"description": "Simple plugin to send data to a Kafka topic",
 		"type": "string", "default": PLUGIN_NAME,
