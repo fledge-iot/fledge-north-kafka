@@ -26,27 +26,44 @@ using namespace rapidjson;
 /**
  * Plugin specific default configuration
  */
-#define PLUGIN_DEFAULT_CONFIG "\"brokers\": { " \
-				"\"description\": \"The bootstrap broker list to retrieve full Kafka brokers\", " \
-				"\"type\": \"string\", " \
-				"\"order\": \"1\", " \
-				"\"displayName\": \"Bootstrap Brokers\", " \
-				"\"default\": \"localhost:9092,kafka.local:9092\" }, " \
-			"\"topic\": { " \
-				"\"description\": \"The topic to send reading data on\", " \
-				"\"order\": \"2\", " \
-				"\"displayName\": \"Kafka Topic\", " \
-				"\"type\": \"string\", \"default\": \"Fledge\" }, " \
-			"\"source\": { " \
-				"\"description\": \"The source of data to send\", " \
-				"\"type\": \"enumeration\", \"default\": \"readings\", " \
-				"\"order\": \"3\", " \
-				"\"displayName\": \"Data Source\", " \
-				"\"options\" : [\"readings\",\"statistics\"] }"
+static const char *default_config = QUOTE({
+	"plugin": {
+		"description": "Simple plugin to send data to a Kafka topic",
+		"type": "string", "default": PLUGIN_NAME,
+		"readonly": "true"
+		},
+	"brokers": {
+		"description": "The bootstrap broker list to retrieve full Kafka brokers",
+		"type": "string",
+		"order": "1",
+		"displayName": "Bootstrap Brokers", 
+		"default": "localhost:9092,kafka.local:9092"
+		},
+	"topic": {
+		"description": "The topic to send reading data on",
+		"order": "2",
+		"displayName": "Kafka Topic",
+		"type": "string", "default": "Fledge"
+		},
+	"json": {
+		"description": "Send as JSON objects or as strings",
+		"type": "enumeration",
+		"default": "Strings",
+		"order": "3",
+		"displayName": "Send JSON",
+		"options" : ["Objects","Strings"]
+		},
+	"source": {
+		"description": "The source of data to send",
+		"type": "enumeration",
+		"default": "readings",
+		"order": "4",
+		"displayName": "Data Source",
+		"options" : ["readings","statistics"]
+		}
+	});
 
-#define KAFKA_PLUGIN_DESC "\"plugin\": {\"description\": \"Simple plugin to send data to a Kafka topic\", \"type\": \"string\", \"default\": \"" PLUGIN_NAME "\", \"readonly\": \"true\"}"
 
-#define PLUGIN_DEFAULT_CONFIG_INFO "{" KAFKA_PLUGIN_DESC ", " PLUGIN_DEFAULT_CONFIG "}"
 
 /**
  * The Kafka plugin interface
@@ -62,7 +79,7 @@ static PLUGIN_INFORMATION info = {
 	0,				// Flags
 	PLUGIN_TYPE_NORTH,		// Type
 	"1.0.0",			// Interface version
-	PLUGIN_DEFAULT_CONFIG_INFO   	// Configuration
+	default_config			// Configuration
 };
 
 /**
@@ -94,6 +111,10 @@ PLUGIN_HANDLE plugin_init(ConfigCategory* configData)
 	string topic = configData->getValue("topic");
 
 	Kafka *kafka = new Kafka(brokers, topic);
+
+	string json = configData->getValue("json");
+	if (json.compare("Objects") == 0)
+		kafka->sendJSONObjects(true);
 
 	return (PLUGIN_HANDLE)kafka;
 }

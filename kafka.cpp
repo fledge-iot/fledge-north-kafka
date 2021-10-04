@@ -10,8 +10,13 @@
 #include <kafka.h>
 #include <logger.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <rapidjson/document.h>
+#include <syslog.h>
 
 using namespace	std;
+using namespace rapidjson;
 
 /**
  * Callback for asynchronous producer results.
@@ -22,6 +27,12 @@ static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void 
 	{
                 Logger::getLogger()->error("Kafka message delivery failed: %s\n",
                         rd_kafka_err2str(rkmessage->err));
+	}
+	else
+	{
+                Logger::getLogger()->debug("Kafka message delivered");
+		Kafka *kafka = (Kafka *)opaque;
+		kafka->success();
 	}
 }
 
@@ -43,7 +54,7 @@ static void pollThreadWrapper(Kafka *kafka)
  * @param topic		THe Kafka topic to publish on
  */
 Kafka::Kafka(const string& brokers, const string& topic) :
-	m_topic(topic), m_running(true)
+	m_topic(topic), m_running(true), m_objects(false)
 {
 char	errstr[512];
 
@@ -54,8 +65,17 @@ char	errstr[512];
 		Logger::getLogger()->fatal(errstr);
 		throw exception();
 	}
+	if (rd_kafka_conf_set(m_conf, "request.required.acks", "all",
+                              errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+	{
+		Logger::getLogger()->fatal(errstr);
+		throw exception();
+	}
+
+	rd_kafka_conf_set_log_cb(m_conf, logCallback);
 
 	rd_kafka_conf_set_dr_msg_cb(m_conf, dr_msg_cb);
+	rd_kafka_conf_set_opaque(m_conf, this);
 	m_rk = rd_kafka_new(RD_KAFKA_PRODUCER, m_conf, errstr, sizeof(errstr));
 	if (!m_rk)
 	{
@@ -87,6 +107,35 @@ Kafka::~Kafka()
 }
 
 /**
+ * Log cllback to add rdkafka messages to the syslog
+ */
+void Kafka::logCallback(const rd_kafka_t *rk, int level, const char *facility, const char *buf)
+{
+	Logger *logger = Logger::getLogger();
+	switch (level)
+	{
+		case LOG_EMERG:
+		case LOG_ALERT:
+		case LOG_CRIT:
+			logger->fatal(buf);
+			break;
+		case LOG_ERR:
+			logger->error(buf);
+			break;
+		case LOG_WARNING:
+			logger->warn(buf);
+			break;
+		case LOG_NOTICE:
+		case LOG_INFO:
+			logger->info(buf);
+			break;
+		case LOG_DEBUG:
+			logger->debug(buf);
+			break;
+	}
+}
+
+/**
  * Polling thread used to collect delivery status
  */
 void
@@ -108,14 +157,18 @@ Kafka::pollThread()
 uint32_t
 Kafka::send(const vector<Reading *> readings)
 {
-ostringstream	payload;
-uint32_t	sent = 0;
 
+	Logger::getLogger()->debug("Kafka send called");
+	m_sent = 0;
+
+	int cnt = 0;
 	for (auto it = readings.cbegin(); it != readings.cend(); ++it)
 	{
+		cnt++;
+		ostringstream	payload;
 		string assetName = (*it)->getAssetName();
-		payload << "{ \"asset\" : \"" << assetName << "\", ";
-		payload << "\"timestamp\" : \"" << (*it)->getAssetDateTime(Reading::FMT_ISO8601) << "\", ";
+		payload << "{ \"asset\" : " << quote(assetName) << ", ";
+		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601MS, true)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
@@ -124,14 +177,85 @@ uint32_t	sent = 0;
 			{
 				payload << ",";
 			}
-			payload << "\"" << (*dit)->getName();
-			payload << "\" : \"" << (*dit)->getData().toString() << "\"";
+			payload << quote((*dit)->getName());
+			DatapointValue dpv = (*dit)->getData();
+			switch (dpv.getType())
+			{
+				case DatapointValue::T_STRING:
+					{
+					string value = dpv.toStringValue();
+					if (m_objects)
+					{
+						Document d;
+						d.Parse(value.c_str());
+						if (!d.HasParseError())
+						{
+							payload << " : " << value;
+						}
+						else
+						{
+							payload << " : " << quote(value);
+						}
+					}
+					else
+					{
+						payload << " : " << quote(value);
+					}
+					break;
+					}
+				default:
+					payload << " : " << quote(dpv.toString());
+					break;
+			}
 		
 		}
 		payload << "}";
-		rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
-			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL);
-		sent++;
+		Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
+		if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+		{
+			Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
+			break;
+		}
+		rd_kafka_poll(m_rk, 0);
 	}
-	return sent;
+	while (rd_kafka_outq_len(m_rk) > 0)
+	{
+		rd_kafka_poll(m_rk, 0);
+		rd_kafka_flush(m_rk, 1000);
+	}
+	Logger::getLogger()->debug("Return with %d messages sent from %d", m_sent, cnt);
+	return m_sent;
+}
+
+/**
+ * Quote a string, escaping any quote characters appearing in the string
+ *
+ * @param orig	The string to quote
+ * @return A quoted string
+ */
+string Kafka::quote(const string& orig)
+{
+	string rval("\"");
+	size_t pos = 0, start = 0;
+
+	if ((pos = orig.find_first_of("\"", start)) != std::string::npos)
+	{
+		const char *p1 = orig.c_str();
+		while (*p1)
+		{
+			if (*p1 == '\"' || *p1 == '\\')
+			{
+				rval += '\\';
+			}
+			rval += *p1;
+			p1++;
+		}
+	}
+	else
+	{
+		rval += orig;
+	}
+	rval += "\"";
+	return rval;
 }
