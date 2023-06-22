@@ -18,6 +18,18 @@
 using namespace	std;
 using namespace rapidjson;
 
+static bool m_error = false;
+/**
+ * error callback function to identify error condition in connection to brokers
+ */
+static void errorCallback(rd_kafka_t *rk, int level, const char *facility, void *opaque)
+{
+        Logger *logger = Logger::getLogger();
+        logger->error("errorCallback level = %d, facility = %s ", level, facility);
+	m_error = true;
+}
+
+
 /**
  * Callback for asynchronous producer results.
  */
@@ -75,6 +87,7 @@ char	errstr[512];
 	rd_kafka_conf_set_log_cb(m_conf, logCallback);
 
 	rd_kafka_conf_set_dr_msg_cb(m_conf, dr_msg_cb);
+	rd_kafka_conf_set_error_cb(m_conf, errorCallback);
 	rd_kafka_conf_set_opaque(m_conf, this);
 	m_rk = rd_kafka_new(RD_KAFKA_PRODUCER, m_conf, errstr, sizeof(errstr));
 	if (!m_rk)
@@ -219,10 +232,15 @@ Kafka::send(const vector<Reading *> readings)
 		}
 		rd_kafka_poll(m_rk, 0);
 	}
-	while (rd_kafka_outq_len(m_rk) > 0)
+	while (rd_kafka_outq_len(m_rk) > 0 && !m_error)
 	{
 		rd_kafka_poll(m_rk, 0);
 		rd_kafka_flush(m_rk, 1000);
+	}
+	if (m_error)
+	{
+		Logger::getLogger()->error("Error in connecting to broker");
+		return 0;
 	}
 	Logger::getLogger()->debug("Return with %d messages sent from %d", m_sent, cnt);
 	return m_sent;
