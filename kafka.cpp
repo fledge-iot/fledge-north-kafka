@@ -24,8 +24,7 @@ static bool m_error = false;
  */
 static void errorCallback(rd_kafka_t *rk, int level, const char *facility, void *opaque)
 {
-        Logger *logger = Logger::getLogger();
-        logger->error("errorCallback level = %d, facility = %s ", level, facility);
+        Logger::getLogger()->error("Error in connecting to brokers: level = %d, errorStr = %s ", level, facility);
 	m_error = true;
 }
 
@@ -239,7 +238,6 @@ Kafka::send(const vector<Reading *> readings)
 	}
 	if (m_error)
 	{
-		Logger::getLogger()->error("Error in connecting to broker");
 		return 0;
 	}
 	Logger::getLogger()->debug("Return with %d messages sent from %d", m_sent, cnt);
