@@ -22,9 +22,9 @@ static bool m_error = false;
 /**
  * error callback function to identify error condition in connection to brokers
  */
-static void errorCallback(rd_kafka_t *rk, int level, const char *facility, void *opaque)
+static void errorCallback(rd_kafka_t *rk, int level, const char *errorStr, void *opaque)
 {
-        Logger::getLogger()->error("Error in connecting to brokers: level = %d, errorStr = %s ", level, facility);
+        Logger::getLogger()->error("Error in connecting to brokers: level = %d, error = %s ", level, errorStr);
 	m_error = true;
 }
 
