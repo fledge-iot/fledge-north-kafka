@@ -67,6 +67,7 @@ static void pollThreadWrapper(Kafka *kafka)
 Kafka::Kafka(const string& brokers, const string& topic) :
 	m_topic(topic), m_running(true), m_objects(false)
 {
+	m_error = false;
 char	errstr[512];
 
 	m_conf = rd_kafka_conf_new();
