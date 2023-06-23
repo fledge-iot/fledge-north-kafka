@@ -18,6 +18,7 @@
 #include <kafka.h>
 #include <config_category.h>
 #include <version.h>
+#include <string_utils.h>
 
 using namespace std;
 using namespace rapidjson;
@@ -37,13 +38,15 @@ static const char *default_config = QUOTE({
 		"type": "string",
 		"order": "1",
 		"displayName": "Bootstrap Brokers", 
-		"default": "localhost:9092,kafka.local:9092"
+		"default": "localhost:9092,kafka.local:9092",
+		"mandatory": "true"
 		},
 	"topic": {
 		"description": "The topic to send reading data on",
 		"order": "2",
 		"displayName": "Kafka Topic",
-		"type": "string", "default": "Fledge"
+		"type": "string", "default": "Fledge",
+		"mandatory": "true"
 		},
 	"json": {
 		"description": "Send as JSON objects or as strings",
@@ -103,12 +106,25 @@ PLUGIN_HANDLE plugin_init(ConfigCategory* configData)
 		throw exception();
 	}
 	string brokers = configData->getValue("brokers");
+	brokers = StringTrim(brokers); 
+	if (brokers.empty())
+	{
+		Logger::getLogger()->fatal("Kafka plugin must have a non-empty bootstrap broker list defined");
+                throw exception();
+	}
+
 	if (!configData->itemExists("topic"))
 	{
 		Logger::getLogger()->fatal("Kafka plugin must define a topic");
 		throw exception();
 	}
 	string topic = configData->getValue("topic");
+	topic = StringTrim(topic);
+	if (topic.empty())
+	{
+		Logger::getLogger()->fatal("Kafka plugin must define a non-empty topic");
+                throw exception();
+        }
 
 	Kafka *kafka = new Kafka(brokers, topic);
 
