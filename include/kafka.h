@@ -28,6 +28,7 @@ class Kafka
 		void			sendJSONObjects(bool arg) { m_objects = arg; };
 		inline void		success() { m_sent++; };
 		static void 		logCallback(const rd_kafka_t *rk, int level, const char *facility, const char *buf);
+		void 			reconnect();
 
 	private:
 		std::string		quote(const std::string& orig);

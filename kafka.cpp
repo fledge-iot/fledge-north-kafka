@@ -6,7 +6,7 @@
  * Released under the Apache 2.0 Licence
  *
  * Author: Mark Riddoch
- */
+m_ */
 #include <kafka.h>
 #include <logger.h>
 #include <unistd.h>
@@ -172,6 +172,7 @@ Kafka::send(const vector<Reading *> readings)
 {
 
 	Logger::getLogger()->debug("Kafka send called");
+	reconnect();
 	m_sent = 0;
 
 	int cnt = 0;
@@ -275,4 +276,31 @@ string Kafka::quote(const string& orig)
 	}
 	rval += "\"";
 	return rval;
+}
+/*
+ *  Reconnect to the brokers
+ */
+void Kafka::reconnect()
+{
+	char    errstr[512];
+	if (!m_rk)
+	{
+		m_rk = rd_kafka_new(RD_KAFKA_PRODUCER, m_conf, errstr, sizeof(errstr));
+		if (!m_rk)
+		{
+			Logger::getLogger()->fatal(errstr);
+			throw exception();
+		}
+        }
+
+	if (!m_rkt)
+	{
+        	m_rkt = rd_kafka_topic_new(m_rk, m_topic.c_str(), NULL);
+		if (!m_rkt) {
+			Logger::getLogger()->fatal("Failed to create topic object: %s\n",
+				rd_kafka_err2str(rd_kafka_last_error()));
+			rd_kafka_destroy(m_rk);
+			throw exception();
+        	}
+	}
 }
