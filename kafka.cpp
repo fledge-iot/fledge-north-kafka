@@ -53,7 +53,7 @@ static void pollThreadWrapper(Kafka *kafka)
  * @param brokers	List of bootstrap brokers to contact
  * @param topic		THe Kafka topic to publish on
  */
-Kafka::Kafka(const string& brokers, const string& topic) :
+Kafka::Kafka(const string& brokers, const string& topic, const string& kafkaSecurityProtocol, const string& kafkaUserID, const string& KafkaPassword) :
 	m_topic(topic), m_running(true), m_objects(false)
 {
 char	errstr[512];
@@ -70,6 +70,43 @@ char	errstr[512];
 	{
 		Logger::getLogger()->fatal(errstr);
 		throw exception();
+	}
+	
+	// Set credentials to connect using user id & password
+	if (kafkaSecurityProtocol == "sasl_plaintext")
+	{
+		// Set the security protocol
+		if (rd_kafka_conf_set(m_conf, "security.protocol", kafkaSecurityProtocol.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+		{
+			Logger::getLogger()->fatal("Failed to set security protocol: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+
+		// Set the security mechanisms
+		if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", "PLAIN", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+		{
+			Logger::getLogger()->fatal("Failed to set security mechanism: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+
+		// Set SASL username
+		if (rd_kafka_conf_set(m_conf, "sasl.username", kafkaUserID.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+		{
+			Logger::getLogger()->fatal("Failed to set SASL user name: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+
+		// Set SASL password
+		if (rd_kafka_conf_set(m_conf, "sasl.password", KafkaPassword.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+		{
+			Logger::getLogger()->fatal("Failed to set SASL password: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+
 	}
 
 	rd_kafka_conf_set_log_cb(m_conf, logCallback);

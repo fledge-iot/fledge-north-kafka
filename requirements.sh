@@ -24,7 +24,7 @@
 set -e
 
 
-git clone https://github.com/edenhill/librdkafka.git --branch v1.8.2
+git clone https://github.com/edenhill/librdkafka.git --branch v2.1.1
 cd librdkafka
 ./configure
 make

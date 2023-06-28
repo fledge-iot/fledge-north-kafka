@@ -21,7 +21,8 @@
 class Kafka
 {
 	public:
-		Kafka(const std::string& brokers, const std::string& topic);
+		Kafka(const std::string& brokers, const std::string& topic,
+			const std::string& kafkaSecurityProtocol, const std::string& kafkaUserID, const std::string& KafkaPassword);
 		~Kafka();
 		uint32_t		send(const std::vector<Reading *> readings);
 		void			pollThread();

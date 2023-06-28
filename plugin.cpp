@@ -53,11 +53,38 @@ static const char *default_config = QUOTE({
 		"displayName": "Send JSON",
 		"options" : ["Objects","Strings"]
 		},
+	"KafkaSecurityProtocol": {
+		"description": "Security protocol to be used to connect with kafka broker",
+		"type": "enumeration",
+		"default": "plaintext",
+		"order": "4",
+		"group": "Authentication",
+		"displayName": "Kafka Security Protocol",
+		"options" : ["plaintext","sasl_plaintext"]
+		},
+	"KafkaUserID": {
+		"description": "User ID to be used with sasl_plaintext security protocol",
+		"type": "string",
+		"default": "user",
+		"order": "5",
+		"group": "Authentication",
+		"displayName": "Kafka User ID",
+		"validity" : "KafkaSecurityProtocol == \"sasl_plaintext\""
+		},
+	"KafkaPassword": {
+		"description": "Password to be used with sasl_plaintext security protocol",
+		"type": "password",
+		"default": "pass",
+		"order": "6",
+		"group": "Authentication",
+		"displayName": "Kafka Password",
+		"validity" : "KafkaSecurityProtocol == \"sasl_plaintext\""
+		},		
 	"source": {
 		"description": "The source of data to send",
 		"type": "enumeration",
 		"default": "readings",
-		"order": "4",
+		"order": "7",
 		"displayName": "Data Source",
 		"options" : ["readings","statistics"]
 		}
@@ -109,8 +136,11 @@ PLUGIN_HANDLE plugin_init(ConfigCategory* configData)
 		throw exception();
 	}
 	string topic = configData->getValue("topic");
+	string kafkaSecurityProtocol = configData->getValue("KafkaSecurityProtocol");
+	string kafkaUserID = configData->getValue("KafkaUserID");
+	string KafkaPassword = configData->getValue("KafkaPassword");
 
-	Kafka *kafka = new Kafka(brokers, topic);
+	Kafka *kafka = new Kafka(brokers, topic, kafkaSecurityProtocol, kafkaUserID, KafkaPassword);
 
 	string json = configData->getValue("json");
 	if (json.compare("Objects") == 0)
