@@ -35,7 +35,7 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
   - **Kafka Password**: Password to be used with SASL_PLAINTEXT and SASL_SSL.
 
 +-----------+
-| |kafka_2| |
+| |kafka_3| |
 +-----------+
 
   - **Root CA Name**: Name of Root CA to use in certificate verification.
