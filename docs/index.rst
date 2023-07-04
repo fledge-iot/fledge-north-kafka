@@ -46,4 +46,5 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **SSL Certificate Password**: Optional: Password to be used when loading the certificate chain.
 
-All the certicates must be added into the certicate store of Fledge
+All the certificates must be added into the certificate store of the Fledge
+
