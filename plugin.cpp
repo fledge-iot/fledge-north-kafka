@@ -1,5 +1,5 @@
 /*
- * Fledge Kafka north plugin.
+ * FogLAMP Kafka north plugin.
  *
  * Copyright (c) 2018 Dianomic Systems
  *
@@ -35,56 +35,102 @@ static const char *default_config = QUOTE({
 	"brokers": {
 		"description": "The bootstrap broker list to retrieve full Kafka brokers",
 		"type": "string",
-		"order": "1",
+		"order": "9",
 		"displayName": "Bootstrap Brokers", 
 		"default": "localhost:9092,kafka.local:9092"
 		},
 	"topic": {
 		"description": "The topic to send reading data on",
-		"order": "2",
+		"order": "10",
 		"displayName": "Kafka Topic",
-		"type": "string", "default": "Fledge"
+		"type": "string", "default": "FogLAMP"
 		},
 	"json": {
 		"description": "Send as JSON objects or as strings",
 		"type": "enumeration",
 		"default": "Strings",
-		"order": "3",
+		"order": "11",
 		"displayName": "Send JSON",
 		"options" : ["Objects","Strings"]
 		},
 	"KafkaSecurityProtocol": {
 		"description": "Security protocol to be used to connect with kafka broker",
 		"type": "enumeration",
-		"default": "plaintext",
-		"order": "4",
+		"default": "PLAINTEXT",
+		"order": "12",
 		"group": "Authentication",
 		"displayName": "Kafka Security Protocol",
-		"options" : ["plaintext","sasl_plaintext"]
+		"options" : ["PLAINTEXT", "SASL_PLAINTEXT", "SSL", "SASL_SSL"]
+		},
+	"KafkaSASLMechanism": {
+		"description": "Security protocol to be used to connect with kafka broker",
+		"type": "enumeration",
+		"default": "PLAIN",
+		"order": "13",
+		"group": "Authentication",
+		"displayName": "Kafka SASL Mechanism",
+		"options" : ["PLAIN", "GSSAPI", "OAUTHBEARER", "SCRAM-SHA-256", "SCRAM-SHA-512"],
+		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
 	"KafkaUserID": {
-		"description": "User ID to be used with sasl_plaintext security protocol",
+		"description": "User ID to be used with SASL_PLAINTEXT security protocol",
 		"type": "string",
 		"default": "user",
-		"order": "5",
+		"order": "14",
 		"group": "Authentication",
 		"displayName": "Kafka User ID",
-		"validity" : "KafkaSecurityProtocol == \"sasl_plaintext\""
+		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
 	"KafkaPassword": {
-		"description": "Password to be used with sasl_plaintext security protocol",
+		"description": "Password to be used with SASL_PLAINTEXT security protocol",
 		"type": "password",
 		"default": "pass",
-		"order": "6",
+		"order": "15",
 		"group": "Authentication",
 		"displayName": "Kafka Password",
-		"validity" : "KafkaSecurityProtocol == \"sasl_plaintext\""
-		},		
+		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
+		},
+	"SSL_CA_File": {
+		"description": "Name of Root CA to use in certificate verification",
+		"type": "string",
+		"default": "",
+		"order": "16",
+		"displayName": "Root CA Name",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "SSL"
+		},
+	"SSL_CERT_FILE": {
+		"description": "Name of client certificate for identity authentications",
+		"type": "string",
+		"default": "",
+		"order": "17",
+		"displayName": "Certificate Name",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "SSL"
+		},
+	"SSL_Keyfile": {
+		"description": "Name of client private key required for communication",
+		"type": "string",
+		"default": "",
+		"order": "18",
+		"displayName": "Private Key Name",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "SSL"
+		},
+	"SSL_Password": {
+		"description": "Optional: Password to be used when loading the certificate chain",
+		"type": "password",
+		"default": "",
+		"order": "19",
+		"displayName": "SSL Certificate Password",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "SSL"
+		},
 	"source": {
 		"description": "The source of data to send",
 		"type": "enumeration",
 		"default": "readings",
-		"order": "7",
+		"order": "20",
 		"displayName": "Data Source",
 		"options" : ["readings","statistics"]
 		}
@@ -135,12 +181,8 @@ PLUGIN_HANDLE plugin_init(ConfigCategory* configData)
 		Logger::getLogger()->fatal("Kafka plugin must define a topic");
 		throw exception();
 	}
-	string topic = configData->getValue("topic");
-	string kafkaSecurityProtocol = configData->getValue("KafkaSecurityProtocol");
-	string kafkaUserID = configData->getValue("KafkaUserID");
-	string KafkaPassword = configData->getValue("KafkaPassword");
-
-	Kafka *kafka = new Kafka(brokers, topic, kafkaSecurityProtocol, kafkaUserID, KafkaPassword);
+	
+	Kafka *kafka = new Kafka(configData);
 
 	string json = configData->getValue("json");
 	if (json.compare("Objects") == 0)

@@ -1,6 +1,7 @@
 .. Images
 .. |kafka_1| image:: images/kafka_1.jpg
 .. |kafka_2| image:: images/kafka_2.jpg
+.. |kafka_3| image:: images/kafka_3.jpg
 
 Kafka Producer
 ==============
@@ -27,7 +28,22 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **Kafka Security Protocol**: Security protocol to be used to connect with kafka broker.
 
-  - **Kafka User ID**: User ID to be used with sasl_plaintext security protocol.
+  - **Kafka SASL Mechanism**: SASL Mechanism. Only PLAIN mechanism is supported, support for other will be added soon
 
-  - **Kafka Password**: Password to be used with sasl_plaintext security protocol.
+  - **Kafka User ID**: User ID to be used with SASL_PLAINTEXT and SASL_SSL.
 
+  - **Kafka Password**: Password to be used with SASL_PLAINTEXT and SASL_SSL.
+
++-----------+
+| |kafka_2| |
++-----------+
+
+  - **Root CA Name**: Name of Root CA to use in certificate verification.
+
+  - **Certificate Name**: Name of client certificate for identity authentications.
+
+  - **Private Key Name**: Name of client private key required for communication.
+
+  - **SSL Certificate Password**: Optional: Password to be used when loading the certificate chain.
+
+All the certicates must be added into the certicate store of Fledge
