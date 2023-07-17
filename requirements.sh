@@ -30,4 +30,4 @@ cd librdkafka
 make
 sudo make install
 cd ..
-#rm -rf librdkafka
+rm -rf librdkafka

@@ -1,7 +1,7 @@
 #ifndef _KAFKA_H
 #define _KAFKA_H
 /*
- * FogLAMP Kafka north plugin.
+ * Fledge Kafka north plugin.
  *
  * Copyright (c) 2018 Dianomic Systems
  *      

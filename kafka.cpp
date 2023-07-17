@@ -1,5 +1,5 @@
 /*
- * FogLAMP Kafka north plugin.
+ * Fledge Kafka north plugin.
  *
  * Copyright (c) 2018 Dianomic Systems
  *
@@ -146,6 +146,7 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
                               errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
 		Logger::getLogger()->fatal(errstr);
+		rd_kafka_conf_destroy(m_conf);
 		throw exception();
 	}
 
@@ -153,6 +154,7 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
                               errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
 		Logger::getLogger()->fatal(errstr);
+		rd_kafka_conf_destroy(m_conf);
 		throw exception();
 	}
 }
@@ -177,7 +179,7 @@ void Kafka::applyConfig_SASL_PLAINTEXT(ConfigCategory*& configData, const string
 	}
 
 	// Set the security mechanisms
-	// TODO : Implementation of following mechanisms is pending "GSSAPI", "OAUTHBEARER", "SCRAM-SHA-256", "SCRAM-SHA-512"
+	// TODO : FOGL-7945 - Implementation of following mechanisms is pending "GSSAPI", "OAUTHBEARER", "SCRAM-SHA-256", "SCRAM-SHA-512"
 	if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", "PLAIN", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
 	{
 		Logger::getLogger()->fatal("Failed to set security mechanism: %s",errstr);
@@ -234,7 +236,7 @@ void Kafka::applyConfig_SSL(ConfigCategory*& configData, const string& kafkaSecu
 	// Set SASL username
 	if (rd_kafka_conf_set(m_conf, "sasl.username", configData->getValue("KafkaUserID").c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
 	{
-		Logger::getLogger()->debug("Failed to set SASL user name: %s",errstr);
+		Logger::getLogger()->debug("Failed to set SASL username: %s",errstr);
 		rd_kafka_conf_destroy(m_conf);
 		throw exception();
 	}
@@ -263,9 +265,9 @@ void Kafka::applyConfig_SSL(ConfigCategory*& configData, const string& kafkaSecu
 	}
 	
 	// Set the SSL Certificate Location
-	if (!configData->getValue("SSL_CERT_FILE").empty())
+	if (!configData->getValue("SSL_CERT").empty())
 	{
-		if (rd_kafka_conf_set(m_conf, "ssl.certificate.location", (storeLocation + configData->getValue("SSL_CERT_FILE")).c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+		if (rd_kafka_conf_set(m_conf, "ssl.certificate.location", (storeLocation + configData->getValue("SSL_CERT")).c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
 		{
 			Logger::getLogger()->fatal("Failed to set SSL certificate location: %s",errstr);
 			rd_kafka_conf_destroy(m_conf);

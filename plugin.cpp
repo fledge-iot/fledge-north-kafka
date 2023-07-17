@@ -1,5 +1,5 @@
 /*
- * FogLAMP Kafka north plugin.
+ * Fledge Kafka north plugin.
  *
  * Copyright (c) 2018 Dianomic Systems
  *
@@ -35,21 +35,21 @@ static const char *default_config = QUOTE({
 	"brokers": {
 		"description": "The bootstrap broker list to retrieve full Kafka brokers",
 		"type": "string",
-		"order": "9",
+		"order": "1",
 		"displayName": "Bootstrap Brokers", 
 		"default": "localhost:9092,kafka.local:9092"
 		},
 	"topic": {
 		"description": "The topic to send reading data on",
-		"order": "10",
+		"order": "2",
 		"displayName": "Kafka Topic",
-		"type": "string", "default": "FogLAMP"
+		"type": "string", "default": "Fledge"
 		},
 	"json": {
 		"description": "Send as JSON objects or as strings",
 		"type": "enumeration",
 		"default": "Strings",
-		"order": "11",
+		"order": "3",
 		"displayName": "Send JSON",
 		"options" : ["Objects","Strings"]
 		},
@@ -57,18 +57,18 @@ static const char *default_config = QUOTE({
 		"description": "Security protocol to be used to connect with kafka broker",
 		"type": "enumeration",
 		"default": "PLAINTEXT",
-		"order": "12",
-		"group": "Authentication",
-		"displayName": "Kafka Security Protocol",
+		"order": "4",
+		"group": "Kafka Authentication",
+		"displayName": "Security Protocol",
 		"options" : ["PLAINTEXT", "SASL_PLAINTEXT", "SSL", "SASL_SSL"]
 		},
 	"KafkaSASLMechanism": {
 		"description": "Security protocol to be used to connect with kafka broker",
 		"type": "enumeration",
 		"default": "PLAIN",
-		"order": "13",
-		"group": "Authentication",
-		"displayName": "Kafka SASL Mechanism",
+		"order": "5",
+		"group": "Kafka Authentication",
+		"displayName": "SASL Mechanism",
 		"options" : ["PLAIN", "GSSAPI", "OAUTHBEARER", "SCRAM-SHA-256", "SCRAM-SHA-512"],
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
@@ -76,34 +76,34 @@ static const char *default_config = QUOTE({
 		"description": "User ID to be used with SASL_PLAINTEXT security protocol",
 		"type": "string",
 		"default": "user",
-		"order": "14",
-		"group": "Authentication",
-		"displayName": "Kafka User ID",
+		"order": "6",
+		"group": "Kafka Authentication",
+		"displayName": "User ID",
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
 	"KafkaPassword": {
 		"description": "Password to be used with SASL_PLAINTEXT security protocol",
 		"type": "password",
 		"default": "pass",
-		"order": "15",
-		"group": "Authentication",
-		"displayName": "Kafka Password",
+		"order": "7",
+		"group": "Kafka Authentication",
+		"displayName": "Password",
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
 	"SSL_CA_File": {
 		"description": "Name of Root CA to use in certificate verification",
 		"type": "string",
 		"default": "",
-		"order": "16",
+		"order": "8",
 		"displayName": "Root CA Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "SSL"
 		},
-	"SSL_CERT_FILE": {
+	"SSL_CERT": {
 		"description": "Name of client certificate for identity authentications",
 		"type": "string",
 		"default": "",
-		"order": "17",
+		"order": "9",
 		"displayName": "Certificate Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "SSL"
@@ -112,7 +112,7 @@ static const char *default_config = QUOTE({
 		"description": "Name of client private key required for communication",
 		"type": "string",
 		"default": "",
-		"order": "18",
+		"order": "10",
 		"displayName": "Private Key Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "SSL"
@@ -121,7 +121,7 @@ static const char *default_config = QUOTE({
 		"description": "Optional: Password to be used when loading the certificate chain",
 		"type": "password",
 		"default": "",
-		"order": "19",
+		"order": "11",
 		"displayName": "SSL Certificate Password",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "SSL"
@@ -130,7 +130,7 @@ static const char *default_config = QUOTE({
 		"description": "The source of data to send",
 		"type": "enumeration",
 		"default": "readings",
-		"order": "20",
+		"order": "12",
 		"displayName": "Data Source",
 		"options" : ["readings","statistics"]
 		}

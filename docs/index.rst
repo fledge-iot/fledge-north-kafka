@@ -16,7 +16,7 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **Bootstrap Brokers**: A comma separate list of Kafka brokers to use to establish a connection to the Kafka system.
 
-  - **Kafka Topic**: The Kafka topic to which all data is sent.
+  - **Topic**: The Kafka topic to which all data is sent.
 
   - **Send JSON**: This controls how JSON data points should be sent to Kafka. These may be sent as strings or as JSON objects.
 
@@ -26,13 +26,13 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 | |kafka_2| |
 +-----------+
 
-  - **Kafka Security Protocol**: Security protocol to be used to connect with kafka broker.
+  - **Security Protocol**: Security protocol to be used to connect with kafka broker.
 
-  - **Kafka SASL Mechanism**: SASL Mechanism. Only PLAIN mechanism is supported, support for other will be added soon
+  - **SASL Mechanism**: SASL Mechanism. Only PLAIN mechanism is supported, support for other will be added soon
 
-  - **Kafka User ID**: User ID to be used with SASL_PLAINTEXT and SASL_SSL.
+  - **User ID**: User ID to be used with SASL_PLAINTEXT and SASL_SSL.
 
-  - **Kafka Password**: Password to be used with SASL_PLAINTEXT and SASL_SSL.
+  - **Password**: Password to be used with SASL_PLAINTEXT and SASL_SSL.
 
 +-----------+
 | |kafka_3| |
@@ -46,5 +46,14 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **SSL Certificate Password**: Optional: Password to be used when loading the certificate chain.
 
-All the certificates must be added into the certificate store of the Fledge
+All the certificate must be added into the certicate store of Fledge
+
+Kafka plugin can also be used to send data to Azure event hub. To send data to Azure event hub you need to set plugin configuration as below
+
+  - **Bootstrap Brokers**: Azure event hub endpoint
+  - **Topic**: Azure event hub name
+  - **Security Protocol**: SASL_SSL
+  - **SASL Mechanism**: PLAIN
+  - **User ID**: $ConnectionString
+  - **SSL Certificate Password**:  Must be set blank
 
