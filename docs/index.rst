@@ -64,3 +64,5 @@ The Kafka plugin can be used to send data to the Azure Event Hub, configured wit
 .. |location_link| raw:: html
 
   <a href="https://learn.microsoft.com/en-us/azure/event-hubs/azure-event-hubs-kafka-overview#shared-access-signature-sas" target="_blank">Azure event hub kafka overview</a>
+
+|location_link|
