@@ -16,7 +16,7 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **Bootstrap Brokers**: A comma separate list of Kafka brokers to use to establish a connection to the Kafka system.
 
-  - **Topic**: The Kafka topic to which all data is sent.
+  - **Kafka Topic**: The Kafka topic to which all data is sent.
 
   - **Send JSON**: This controls how JSON data points should be sent to Kafka. These may be sent as strings or as JSON objects.
 
@@ -26,34 +26,38 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 | |kafka_2| |
 +-----------+
 
-  - **Security Protocol**: Security protocol to be used to connect with kafka broker.
+  - **Security Protocol**: Security protocol to be used to connect to the kafka broker.
 
-  - **SASL Mechanism**: SASL Mechanism. Only PLAIN mechanism is supported, support for other will be added soon
+  - **Mechanism**: Authentication mechanism to be used to connect to kafka broker. Only PLAIN mechanism is supported as of now, support for other authentication mechanism will be added soon
 
-  - **User ID**: User ID to be used with SASL_PLAINTEXT and SASL_SSL.
+  - **User ID**: The User ID to use when the Mechansim is set to SASL_PLAINTEXT or SASL_SSL.
 
-  - **Password**: Password to be used with SASL_PLAINTEXT and SASL_SSL.
+  - **Password**: The Password to use when the Mechansim is set to SASL_PLAINTEXT or SASL_SSL.
 
 +-----------+
 | |kafka_3| |
 +-----------+
 
-  - **Root CA Name**: Name of Root CA to use in certificate verification.
+  - **Root CA Name**: Name of the root certificate authority that will be used to verify the certificate.
 
   - **Certificate Name**: Name of client certificate for identity authentications.
 
   - **Private Key Name**: Name of client private key required for communication.
 
-  - **SSL Certificate Password**: Optional: Password to be used when loading the certificate chain.
+  - **Certificate Password**: Optional: Password to be used when loading the certificate chain.
 
-All the certificate must be added into the certicate store of Fledge
+All the certificates must be added to the certificate store within Fledge.
 
-Kafka plugin can also be used to send data to Azure event hub. To send data to Azure event hub you need to set plugin configuration as below
+==========================
+Sending To Event Azure Hub
+==========================
+
+The Kafka plugin can be used to send data to the Azure Event Hub, this will require the following configuration item settings
 
   - **Bootstrap Brokers**: Azure event hub endpoint
   - **Topic**: Azure event hub name
   - **Security Protocol**: SASL_SSL
-  - **SASL Mechanism**: PLAIN
+  - **Mechanism**: PLAIN
   - **User ID**: $ConnectionString
   - **SSL Certificate Password**:  Must be set blank
 

@@ -58,7 +58,7 @@ static const char *default_config = QUOTE({
 		"type": "enumeration",
 		"default": "PLAINTEXT",
 		"order": "4",
-		"group": "Kafka Authentication",
+		"group": "Authentication",
 		"displayName": "Security Protocol",
 		"options" : ["PLAINTEXT", "SASL_PLAINTEXT", "SSL", "SASL_SSL"]
 		},
@@ -67,9 +67,9 @@ static const char *default_config = QUOTE({
 		"type": "enumeration",
 		"default": "PLAIN",
 		"order": "5",
-		"group": "Kafka Authentication",
-		"displayName": "SASL Mechanism",
-		"options" : ["PLAIN", "GSSAPI", "OAUTHBEARER", "SCRAM-SHA-256", "SCRAM-SHA-512"],
+		"group": "Authentication",
+		"displayName": "Mechanism",
+		"options" : ["PLAIN"],
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
 	"KafkaUserID": {
@@ -77,7 +77,7 @@ static const char *default_config = QUOTE({
 		"type": "string",
 		"default": "user",
 		"order": "6",
-		"group": "Kafka Authentication",
+		"group": "Authentication",
 		"displayName": "User ID",
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
@@ -86,18 +86,18 @@ static const char *default_config = QUOTE({
 		"type": "password",
 		"default": "pass",
 		"order": "7",
-		"group": "Kafka Authentication",
+		"group": "Authentication",
 		"displayName": "Password",
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
 	"SSL_CA_File": {
-		"description": "Name of Root CA to use in certificate verification",
+		"description": "Name of the root certificate authority that will be used to verify the certificate",
 		"type": "string",
 		"default": "",
 		"order": "8",
 		"displayName": "Root CA Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
-		"group": "SSL"
+		"group": "Encryption"
 		},
 	"SSL_CERT": {
 		"description": "Name of client certificate for identity authentications",
@@ -106,7 +106,7 @@ static const char *default_config = QUOTE({
 		"order": "9",
 		"displayName": "Certificate Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
-		"group": "SSL"
+		"group": "Encryption"
 		},
 	"SSL_Keyfile": {
 		"description": "Name of client private key required for communication",
@@ -115,16 +115,16 @@ static const char *default_config = QUOTE({
 		"order": "10",
 		"displayName": "Private Key Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
-		"group": "SSL"
+		"group": "Encryption"
 		},
 	"SSL_Password": {
 		"description": "Optional: Password to be used when loading the certificate chain",
 		"type": "password",
 		"default": "",
 		"order": "11",
-		"displayName": "SSL Certificate Password",
+		"displayName": "Certificate Password",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
-		"group": "SSL"
+		"group": "Encryption"
 		},
 	"source": {
 		"description": "The source of data to send",
