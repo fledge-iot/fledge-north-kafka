@@ -28,7 +28,7 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **Security Protocol**: Security protocol to be used to connect to the kafka broker.
 
-  - **Mechanism**: Authentication mechanism to be used to connect to kafka broker. Only PLAIN mechanism is supported as of now, support for other authentication mechanism will be added soon
+  - **SASL Mechanism**: Authentication mechanism to be used to connect to kafka broker. Only PLAIN mechanism is supported as of now, support for other authentication mechanism will be added soon
 
   - **User ID**: The User ID to use when the Mechansim is set to SASL_PLAINTEXT or SASL_SSL.
 
@@ -52,12 +52,15 @@ All the certificates must be added to the certificate store within Fledge.
 Sending To Event Azure Hub
 ==========================
 
-The Kafka plugin can be used to send data to the Azure Event Hub, this will require the following configuration item settings
+The Kafka plugin can be used to send data to the Azure Event Hub, configured with Shared Access Signature (SAS); This will require the following configuration settings,
 
   - **Bootstrap Brokers**: Azure event hub endpoint
   - **Topic**: Azure event hub name
   - **Security Protocol**: SASL_SSL
-  - **Mechanism**: PLAIN
+  - **SASL Mechanism**: PLAIN
   - **User ID**: $ConnectionString
   - **SSL Certificate Password**:  Must be set blank
 
+.. |location_link| raw:: html
+
+  <a href="https://learn.microsoft.com/en-us/azure/event-hubs/azure-event-hubs-kafka-overview#shared-access-signature-sas" target="_blank">Azure event hub kafka overview</a>

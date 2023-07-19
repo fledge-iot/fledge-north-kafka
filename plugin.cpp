@@ -54,7 +54,7 @@ static const char *default_config = QUOTE({
 		"options" : ["Objects","Strings"]
 		},
 	"KafkaSecurityProtocol": {
-		"description": "Security protocol to be used to connect with kafka broker",
+		"description": "Security protocol to be used to connect to kafka broker",
 		"type": "enumeration",
 		"default": "PLAINTEXT",
 		"order": "4",
@@ -63,12 +63,12 @@ static const char *default_config = QUOTE({
 		"options" : ["PLAINTEXT", "SASL_PLAINTEXT", "SSL", "SASL_SSL"]
 		},
 	"KafkaSASLMechanism": {
-		"description": "Security protocol to be used to connect with kafka broker",
+		"description": "Authentication mechanism to be used to connect to kafka broker",
 		"type": "enumeration",
 		"default": "PLAIN",
 		"order": "5",
 		"group": "Authentication",
-		"displayName": "Mechanism",
+		"displayName": "SASL Mechanism",
 		"options" : ["PLAIN"],
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
