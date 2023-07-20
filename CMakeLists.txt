@@ -73,7 +73,7 @@ target_link_libraries(${PROJECT_NAME} librdkafka.a)
 target_link_libraries(${PROJECT_NAME} ${NEEDED_FLEDGE_LIBS})
 
 # Add additional libraries
-target_link_libraries(${PROJECT_NAME}  -lssl -lm -lcrypto -lz -ldl -lpthread -lrt)
+target_link_libraries(${PROJECT_NAME}  -lssl -lm -lcrypto -lz -ldl -lpthread -lrt -lcurl)
 
 # Set the build version 
 set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 1)

@@ -23,10 +23,10 @@
 
 set -e
 
-
-git clone https://github.com/edenhill/librdkafka.git --branch v1.8.2
+sudo apt install -y openssl libssl-dev
+git clone https://github.com/edenhill/librdkafka.git --branch v2.1.1
 cd librdkafka
-./configure
+./configure --enable-ssl
 make
 sudo make install
 cd ..
