@@ -49,7 +49,7 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 All the certificates must be added to the certificate store within Fledge.
 
 ==========================
-Sending To Event Azure Hub
+Sending To Azure Event Hub
 ==========================
 
 The Kafka plugin can be used to send data to the Azure Event Hub, configured with Shared Access Signature (SAS); This will require the following configuration settings,
