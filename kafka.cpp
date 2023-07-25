@@ -392,7 +392,7 @@ Kafka::send(const vector<Reading *> readings)
 			if ( dataType == DatapointValue::T_IMAGE || dataType == DatapointValue::T_DATABUFFER )
 			{
 				// SKIP Image data type
-				Logger::getLogger()->debug("Image and databuffer are not supported. Datapoint %s of asset %s has image/databuffer",assetName.c_str(), (*dit)->getName().c_str());
+				Logger::getLogger()->info("Image and databuffer are not supported. Datapoint %s of asset %s has image/databuffer",assetName.c_str(), (*dit)->getName().c_str());
 				success();
 				continue;
 			}
