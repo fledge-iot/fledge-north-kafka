@@ -380,15 +380,26 @@ Kafka::send(const vector<Reading *> readings)
 		payload << "{ \"asset\" : " << quote(assetName) << ", ";
 		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601MS, true)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
+		bool isImage = true;
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
 		{
+			DatapointValue dpv = (*dit)->getData();
+			DatapointValue::dataTagType dataType = dpv.getType();
+			if ( dataType == DatapointValue::T_IMAGE || dataType == DatapointValue::T_DATABUFFER )
+			{
+				// SKIP Image data type
+				Logger::getLogger()->info("Image and databuffer are not supported. Datapoint %s of asset %s has image/databuffer",assetName.c_str(), (*dit)->getName().c_str());
+				success();
+				continue;
+			}
+			isImage = false;
 			if (dit != datapoints.cbegin())
 			{
 				payload << ",";
 			}
 			payload << quote((*dit)->getName());
-			DatapointValue dpv = (*dit)->getData();
+
 			switch (dpv.getType())
 			{
 				case DatapointValue::T_STRING:
@@ -420,13 +431,17 @@ Kafka::send(const vector<Reading *> readings)
 		
 		}
 		payload << "}";
-		Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
-		if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
-			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+		if (!isImage)
 		{
-			Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
-			break;
+			Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
+			if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+				(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+			{
+				Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
+				break;
+			}
 		}
+
 		rd_kafka_poll(m_rk, 0);
 	}
 	while (rd_kafka_outq_len(m_rk) > 0)
