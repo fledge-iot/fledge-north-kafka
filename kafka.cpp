@@ -124,7 +124,10 @@ string	Kafka::certificateStoreLocation()
 	else
 	{
 		env = getenv("FLEDGE_ROOT");
-		storeLocation = std::string(env) + "/data/etc/certs/";
+		if (env)
+			storeLocation = std::string(env) + "/data/etc/certs/";
+		else
+			storeLocation = "/usr/local/fledge/data/etc/certs/";
 	}
 
 	return storeLocation;
@@ -389,7 +392,7 @@ Kafka::send(const vector<Reading *> readings)
 			if ( dataType == DatapointValue::T_IMAGE || dataType == DatapointValue::T_DATABUFFER )
 			{
 				// SKIP Image data type
-				Logger::getLogger()->info("Image and databuffer are not supported. Datapoint %s of asset %s has image/databuffer",assetName.c_str(), (*dit)->getName().c_str());
+				Logger::getLogger()->debug("Image and databuffer are not supported. Datapoint %s of asset %s has image/databuffer",assetName.c_str(), (*dit)->getName().c_str());
 				success();
 				continue;
 			}
