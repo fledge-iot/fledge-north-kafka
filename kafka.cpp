@@ -383,7 +383,7 @@ Kafka::send(const vector<Reading *> readings)
 		payload << "{ \"asset\" : " << quote(assetName) << ", ";
 		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601MS, true)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
-		bool isImage = true;
+		bool isPayloadToSend = false;
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
 		{
@@ -391,12 +391,12 @@ Kafka::send(const vector<Reading *> readings)
 			DatapointValue::dataTagType dataType = dpv.getType();
 			if ( dataType == DatapointValue::T_IMAGE || dataType == DatapointValue::T_DATABUFFER )
 			{
-				// SKIP Image data type
-				Logger::getLogger()->info("Image and databuffer are not supported. Datapoint %s of asset %s has image/databuffer",assetName.c_str(), (*dit)->getName().c_str());
+				// SKIP Image and databuffer type
+				Logger::getLogger()->info("Image and databuffer are not supported in kafka north implementation. Datapoint %s of asset %s has image/databuffer",(*dit)->getName().c_str(), assetName.c_str());
 				success();
 				continue;
 			}
-			isImage = false;
+			isPayloadToSend = true;
 			if (dit != datapoints.cbegin())
 			{
 				payload << ",";
@@ -434,7 +434,7 @@ Kafka::send(const vector<Reading *> readings)
 		
 		}
 		payload << "}";
-		if (!isImage)
+		if (isPayloadToSend)
 		{
 			Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
 			if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
