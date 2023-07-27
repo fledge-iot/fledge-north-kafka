@@ -124,7 +124,10 @@ string	Kafka::certificateStoreLocation()
 	else
 	{
 		env = getenv("FLEDGE_ROOT");
-		storeLocation = std::string(env) + "/data/etc/certs/";
+		if (env)
+			storeLocation = std::string(env) + "/data/etc/certs/";
+		else
+			storeLocation = "/usr/local/fledge/data/etc/certs/";
 	}
 
 	return storeLocation;
@@ -380,15 +383,26 @@ Kafka::send(const vector<Reading *> readings)
 		payload << "{ \"asset\" : " << quote(assetName) << ", ";
 		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601MS, true)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
+		bool isPayloadToSend = false;
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
 		{
+			DatapointValue dpv = (*dit)->getData();
+			DatapointValue::dataTagType dataType = dpv.getType();
+			if ( dataType == DatapointValue::T_IMAGE || dataType == DatapointValue::T_DATABUFFER )
+			{
+				// SKIP Image and databuffer type
+				Logger::getLogger()->info("Image and databuffer are not supported in kafka north implementation. Datapoint %s of asset %s has image/databuffer",(*dit)->getName().c_str(), assetName.c_str());
+				success();
+				continue;
+			}
+			isPayloadToSend = true;
 			if (dit != datapoints.cbegin())
 			{
 				payload << ",";
 			}
 			payload << quote((*dit)->getName());
-			DatapointValue dpv = (*dit)->getData();
+
 			switch (dpv.getType())
 			{
 				case DatapointValue::T_STRING:
@@ -420,13 +434,17 @@ Kafka::send(const vector<Reading *> readings)
 		
 		}
 		payload << "}";
-		Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
-		if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
-			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+		if (isPayloadToSend)
 		{
-			Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
-			break;
+			Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
+			if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+				(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+			{
+				Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
+				break;
+			}
 		}
+
 		rd_kafka_poll(m_rk, 0);
 	}
 	while (rd_kafka_outq_len(m_rk) > 0)
