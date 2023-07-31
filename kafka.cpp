@@ -484,10 +484,6 @@ Kafka::send(const vector<Reading *> readings)
 		rd_kafka_flush(m_rk, 1000);
 	}
 	Logger::getLogger()->debug("Return with %d messages sent from %d", m_sent, cnt);
-	if (m_error)
-	{
-		return m_sent;
-	}
 	return m_sent;
 }
 
