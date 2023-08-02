@@ -44,7 +44,8 @@ static const char *default_config = QUOTE({
 		"description": "The topic to send reading data on",
 		"order": "2",
 		"displayName": "Kafka Topic",
-		"type": "string", "default": "Fledge",
+		"type": "string",
+		"default": "Fledge",
 		"mandatory": "true"
 		},
 	"json": {
