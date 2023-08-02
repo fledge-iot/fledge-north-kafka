@@ -18,7 +18,6 @@
 using namespace	std;
 using namespace rapidjson;
 
-static bool m_error = false;
 
 /**
  * Callback for asynchronous producer results.
@@ -35,6 +34,8 @@ static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void 
                 Logger::getLogger()->debug("Kafka message delivered");
 		Kafka *kafka = (Kafka *)opaque;
 		kafka->success();
+		kafka->setErrorStatus(false);
+
 	}
 }
 
@@ -44,14 +45,15 @@ static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void 
 static void error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
 {
     rd_kafka_resp_err_t kafkaError = (rd_kafka_resp_err_t) err;
+	Kafka *kafka = (Kafka *)opaque;
 	switch (kafkaError)
 	{
 		case RD_KAFKA_RESP_ERR__TRANSPORT:
-			m_error = true;
+			kafka->setErrorStatus(true);
 			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
 			break;
 		case RD_KAFKA_RESP_ERR__ALL_BROKERS_DOWN:
-			m_error = true;
+			kafka->setErrorStatus(true);
 			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
 			break;
 		case RD_KAFKA_RESP_ERR__RESOLVE:
