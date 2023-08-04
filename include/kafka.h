@@ -28,6 +28,7 @@ class Kafka
 		void			pollThread();
 		void			sendJSONObjects(bool arg) { m_objects = arg; };
 		inline void		success() { m_sent++; };
+		inline void		setErrorStatus(bool isError) { m_error = isError; };
 		static void 		logCallback(const rd_kafka_t *rk, int level, const char *facility, const char *buf);
 		
 	private:
@@ -43,6 +44,7 @@ class Kafka
 		rd_kafka_topic_t	*m_rkt;
 		rd_kafka_conf_t		*m_conf;
 		bool			m_objects;
+		bool			m_error;
 		int			m_sent;
 };
 #endif

@@ -18,6 +18,7 @@
 using namespace	std;
 using namespace rapidjson;
 
+
 /**
  * Callback for asynchronous producer results.
  */
@@ -33,6 +34,34 @@ static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void 
                 Logger::getLogger()->debug("Kafka message delivered");
 		Kafka *kafka = (Kafka *)opaque;
 		kafka->success();
+		kafka->setErrorStatus(false);
+
+	}
+}
+
+/**
+ *  Callback to handle errors
+ */
+static void error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
+{
+    rd_kafka_resp_err_t kafkaError = (rd_kafka_resp_err_t) err;
+	Kafka *kafka = (Kafka *)opaque;
+	switch (kafkaError)
+	{
+		case RD_KAFKA_RESP_ERR__TRANSPORT:
+			kafka->setErrorStatus(true);
+			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
+		case RD_KAFKA_RESP_ERR__ALL_BROKERS_DOWN:
+			kafka->setErrorStatus(true);
+			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
+		case RD_KAFKA_RESP_ERR__RESOLVE:
+			Logger::getLogger()->warn("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
+		default:
+			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
 	}
 }
 
@@ -57,6 +86,7 @@ Kafka::Kafka(ConfigCategory*& configData ) : m_running(true), m_objects(false)
 {
 	try
 	{
+		m_error = false;
 		char	errstr[512];
 		m_topic = configData->getValue("topic");
 		m_conf = rd_kafka_conf_new();
@@ -160,6 +190,9 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
 		rd_kafka_conf_destroy(m_conf);
 		throw exception();
 	}
+
+	// Set the error callback function
+	rd_kafka_conf_set_error_cb(m_conf, error_cb);
 }
 
 /**
@@ -447,7 +480,7 @@ Kafka::send(const vector<Reading *> readings)
 
 		rd_kafka_poll(m_rk, 0);
 	}
-	while (rd_kafka_outq_len(m_rk) > 0)
+	while (rd_kafka_outq_len(m_rk) > 0 && !m_error)
 	{
 		rd_kafka_poll(m_rk, 0);
 		rd_kafka_flush(m_rk, 1000);
@@ -487,3 +520,4 @@ string Kafka::quote(const string& orig)
 	rval += "\"";
 	return rval;
 }
+

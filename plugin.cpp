@@ -37,13 +37,15 @@ static const char *default_config = QUOTE({
 		"type": "string",
 		"order": "1",
 		"displayName": "Bootstrap Brokers", 
-		"default": "localhost:9092,kafka.local:9092"
+		"default": "localhost:9092,kafka.local:9092",
+		"mandatory": "true"
 		},
 	"topic": {
 		"description": "The topic to send reading data on",
 		"order": "2",
 		"displayName": "Kafka Topic",
-		"type": "string", "default": "Fledge"
+		"type": "string", "default": "Fledge",
+		"mandatory": "true"
 		},
 	"json": {
 		"description": "Send as JSON objects or as strings",
