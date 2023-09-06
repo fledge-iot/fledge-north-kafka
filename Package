@@ -20,7 +20,7 @@ case "$arch" in
 esac
 case "$package_manager" in
 	deb)
-		;;
+		requirements="${requirements},openssl,libssl-dev";;
 	rpm)
-		;;
+		requirements="${requirements},openssl";;
 esac

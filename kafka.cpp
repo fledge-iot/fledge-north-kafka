@@ -191,6 +191,12 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
 		throw exception();
 	}
 
+	if (rd_kafka_conf_set(m_conf, "compression.codec", configData->getValue("compression").c_str(),
+                              errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+	{
+		Logger::getLogger()->fatal(errstr);
+	}
+
 	// Set the error callback function
 	rd_kafka_conf_set_error_cb(m_conf, error_cb);
 }
