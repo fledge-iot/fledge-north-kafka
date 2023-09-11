@@ -194,7 +194,7 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
 	if (rd_kafka_conf_set(m_conf, "compression.codec", configData->getValue("compression").c_str(),
                               errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
-		Logger::getLogger()->fatal(errstr);
+		Logger::getLogger()->warn("compression codec %s couldn't be set because %s. Continue with no/previous compression",configData->getValue("compression").c_str(),errstr);
 	}
 
 	// Set the error callback function

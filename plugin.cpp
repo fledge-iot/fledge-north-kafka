@@ -56,11 +56,11 @@ static const char *default_config = QUOTE({
 		"options" : ["Objects","Strings"]
 		},
 	"compression": {
-		"description": "Type of compression codec to be used before sending data to kafka broker",
+		"description": "The compression codec to be used to send data to Kafka broker",
 		"type": "enumeration",
 		"default": "none",
 		"order": "4",
-		"displayName": "Compression Type",
+		"displayName": "Compression Codec",
 		"options" : ["none","gzip","snappy","lz4"]
 		},
 	"KafkaSecurityProtocol": {

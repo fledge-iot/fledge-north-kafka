@@ -20,7 +20,7 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **Send JSON**: This controls how JSON data points should be sent to Kafka. These may be sent as strings or as JSON objects.
 
-  - **Compression Type**: Type of compression codec to be used before sending data to kafka broker. Supported compression types are gzip, snappy and lz4. Default value is none.
+  - **Compression Codec**: The compression codec to be used to send data to the Kafka broker. Supported compression codecs are; gzip, snappy, lz4 or none. The default value is none, in which case no compression will take place. Plugin will send data with no/previous compression in case of any failure to set compression codec.
 
   - **Data Source**: Which Fledge data to send to Kafka; Readings or Fledge Statistics.
 
