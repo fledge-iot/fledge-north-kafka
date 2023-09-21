@@ -191,6 +191,18 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
 		throw exception();
 	}
 
+	if (rd_kafka_conf_set(m_conf, "compression.codec", configData->getValue("compression").c_str(),
+                              errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+	{
+		// Get previous compression codec
+		char compressionCodec[32];
+		size_t length = sizeof(compressionCodec);
+		rd_kafka_conf_res_t res;
+		res = rd_kafka_conf_get(m_conf, "compression.codec", compressionCodec, &length);
+		
+		Logger::getLogger()->warn("Compression codec %s couldn't be set because %s. Continuing with %s compression", configData->getValue("compression").c_str(), errstr, compressionCodec);
+	}
+
 	// Set the error callback function
 	rd_kafka_conf_set_error_cb(m_conf, error_cb);
 }

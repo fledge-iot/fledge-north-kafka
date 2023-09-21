@@ -55,11 +55,19 @@ static const char *default_config = QUOTE({
 		"displayName": "Send JSON",
 		"options" : ["Objects","Strings"]
 		},
+	"compression": {
+		"description": "The compression codec to be used to send data to the Kafka broker",
+		"type": "enumeration",
+		"default": "none",
+		"order": "4",
+		"displayName": "Compression Codec",
+		"options" : ["none","gzip","snappy","lz4"]
+		},
 	"KafkaSecurityProtocol": {
 		"description": "Security protocol to be used to connect to kafka broker",
 		"type": "enumeration",
 		"default": "PLAINTEXT",
-		"order": "4",
+		"order": "5",
 		"group": "Authentication",
 		"displayName": "Security Protocol",
 		"options" : ["PLAINTEXT", "SASL_PLAINTEXT", "SSL", "SASL_SSL"]
@@ -68,7 +76,7 @@ static const char *default_config = QUOTE({
 		"description": "Authentication mechanism to be used to connect to kafka broker",
 		"type": "enumeration",
 		"default": "PLAIN",
-		"order": "5",
+		"order": "6",
 		"group": "Authentication",
 		"displayName": "SASL Mechanism",
 		"options" : ["PLAIN"],
@@ -78,7 +86,7 @@ static const char *default_config = QUOTE({
 		"description": "User ID to be used with SASL_PLAINTEXT security protocol",
 		"type": "string",
 		"default": "user",
-		"order": "6",
+		"order": "7",
 		"group": "Authentication",
 		"displayName": "User ID",
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
@@ -87,7 +95,7 @@ static const char *default_config = QUOTE({
 		"description": "Password to be used with SASL_PLAINTEXT security protocol",
 		"type": "password",
 		"default": "pass",
-		"order": "7",
+		"order": "8",
 		"group": "Authentication",
 		"displayName": "Password",
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
@@ -96,7 +104,7 @@ static const char *default_config = QUOTE({
 		"description": "Name of the root certificate authority that will be used to verify the certificate",
 		"type": "string",
 		"default": "",
-		"order": "8",
+		"order": "9",
 		"displayName": "Root CA Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "Encryption"
@@ -105,7 +113,7 @@ static const char *default_config = QUOTE({
 		"description": "Name of client certificate for identity authentications",
 		"type": "string",
 		"default": "",
-		"order": "9",
+		"order": "10",
 		"displayName": "Certificate Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "Encryption"
@@ -114,7 +122,7 @@ static const char *default_config = QUOTE({
 		"description": "Name of client private key required for communication",
 		"type": "string",
 		"default": "",
-		"order": "10",
+		"order": "11",
 		"displayName": "Private Key Name",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "Encryption"
@@ -123,7 +131,7 @@ static const char *default_config = QUOTE({
 		"description": "Optional: Password to be used when loading the certificate chain",
 		"type": "password",
 		"default": "",
-		"order": "11",
+		"order": "12",
 		"displayName": "Certificate Password",
 		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
 		"group": "Encryption"
@@ -132,7 +140,7 @@ static const char *default_config = QUOTE({
 		"description": "The source of data to send",
 		"type": "enumeration",
 		"default": "readings",
-		"order": "12",
+		"order": "13",
 		"displayName": "Data Source",
 		"options" : ["readings","statistics"]
 		}
