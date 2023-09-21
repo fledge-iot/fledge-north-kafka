@@ -56,7 +56,7 @@ static const char *default_config = QUOTE({
 		"options" : ["Objects","Strings"]
 		},
 	"compression": {
-		"description": "The compression codec to be used to send data to Kafka broker",
+		"description": "The compression codec to be used to send data to the Kafka broker",
 		"type": "enumeration",
 		"default": "none",
 		"order": "4",
