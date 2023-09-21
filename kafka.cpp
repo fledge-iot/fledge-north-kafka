@@ -195,7 +195,7 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
                               errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
 		// Get previous compression codec
-		char compressionCodec[10];
+		char compressionCodec[32];
 		size_t length = sizeof(compressionCodec);
 		rd_kafka_conf_res_t res;
 		res = rd_kafka_conf_get(m_conf, "compression.codec", compressionCodec, &length);
