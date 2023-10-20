@@ -37,13 +37,15 @@ static const char *default_config = QUOTE({
 		"type": "string",
 		"order": "1",
 		"displayName": "Bootstrap Brokers", 
-		"default": "localhost:9092,kafka.local:9092"
+		"default": "localhost:9092,kafka.local:9092",
+		"mandatory": "true"
 		},
 	"topic": {
 		"description": "The topic to send reading data on",
 		"order": "2",
 		"displayName": "Kafka Topic",
-		"type": "string", "default": "Fledge"
+		"type": "string", "default": "Fledge",
+		"mandatory": "true"
 		},
 	"json": {
 		"description": "Send as JSON objects or as strings",
@@ -53,11 +55,92 @@ static const char *default_config = QUOTE({
 		"displayName": "Send JSON",
 		"options" : ["Objects","Strings"]
 		},
+	"compression": {
+		"description": "The compression codec to be used to send data to the Kafka broker",
+		"type": "enumeration",
+		"default": "none",
+		"order": "4",
+		"displayName": "Compression Codec",
+		"options" : ["none","gzip","snappy","lz4"]
+		},
+	"KafkaSecurityProtocol": {
+		"description": "Security protocol to be used to connect to kafka broker",
+		"type": "enumeration",
+		"default": "PLAINTEXT",
+		"order": "5",
+		"group": "Authentication",
+		"displayName": "Security Protocol",
+		"options" : ["PLAINTEXT", "SASL_PLAINTEXT", "SSL", "SASL_SSL"]
+		},
+	"KafkaSASLMechanism": {
+		"description": "Authentication mechanism to be used to connect to kafka broker",
+		"type": "enumeration",
+		"default": "PLAIN",
+		"order": "6",
+		"group": "Authentication",
+		"displayName": "SASL Mechanism",
+		"options" : ["PLAIN"],
+		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
+		},
+	"KafkaUserID": {
+		"description": "User ID to be used with SASL_PLAINTEXT security protocol",
+		"type": "string",
+		"default": "user",
+		"order": "7",
+		"group": "Authentication",
+		"displayName": "User ID",
+		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
+		},
+	"KafkaPassword": {
+		"description": "Password to be used with SASL_PLAINTEXT security protocol",
+		"type": "password",
+		"default": "pass",
+		"order": "8",
+		"group": "Authentication",
+		"displayName": "Password",
+		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
+		},
+	"SSL_CA_File": {
+		"description": "Name of the root certificate authority that will be used to verify the certificate",
+		"type": "string",
+		"default": "",
+		"order": "9",
+		"displayName": "Root CA Name",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "Encryption"
+		},
+	"SSL_CERT": {
+		"description": "Name of client certificate for identity authentications",
+		"type": "string",
+		"default": "",
+		"order": "10",
+		"displayName": "Certificate Name",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "Encryption"
+		},
+	"SSL_Keyfile": {
+		"description": "Name of client private key required for communication",
+		"type": "string",
+		"default": "",
+		"order": "11",
+		"displayName": "Private Key Name",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "Encryption"
+		},
+	"SSL_Password": {
+		"description": "Optional: Password to be used when loading the certificate chain",
+		"type": "password",
+		"default": "",
+		"order": "12",
+		"displayName": "Certificate Password",
+		"validity": "KafkaSecurityProtocol == \"SSL\" || KafkaSecurityProtocol == \"SASL_SSL\"",
+		"group": "Encryption"
+		},
 	"source": {
 		"description": "The source of data to send",
 		"type": "enumeration",
 		"default": "readings",
-		"order": "4",
+		"order": "13",
 		"displayName": "Data Source",
 		"options" : ["readings","statistics"]
 		}
@@ -108,9 +191,8 @@ PLUGIN_HANDLE plugin_init(ConfigCategory* configData)
 		Logger::getLogger()->fatal("Kafka plugin must define a topic");
 		throw exception();
 	}
-	string topic = configData->getValue("topic");
-
-	Kafka *kafka = new Kafka(brokers, topic);
+	
+	Kafka *kafka = new Kafka(configData);
 
 	string json = configData->getValue("json");
 	if (json.compare("Objects") == 0)

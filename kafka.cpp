@@ -18,6 +18,7 @@
 using namespace	std;
 using namespace rapidjson;
 
+
 /**
  * Callback for asynchronous producer results.
  */
@@ -33,6 +34,34 @@ static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void 
                 Logger::getLogger()->debug("Kafka message delivered");
 		Kafka *kafka = (Kafka *)opaque;
 		kafka->success();
+		kafka->setErrorStatus(false);
+
+	}
+}
+
+/**
+ *  Callback to handle errors
+ */
+static void error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
+{
+    rd_kafka_resp_err_t kafkaError = (rd_kafka_resp_err_t) err;
+	Kafka *kafka = (Kafka *)opaque;
+	switch (kafkaError)
+	{
+		case RD_KAFKA_RESP_ERR__TRANSPORT:
+			kafka->setErrorStatus(true);
+			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
+		case RD_KAFKA_RESP_ERR__ALL_BROKERS_DOWN:
+			kafka->setErrorStatus(true);
+			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
+		case RD_KAFKA_RESP_ERR__RESOLVE:
+			Logger::getLogger()->warn("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
+		default:
+			Logger::getLogger()->error("Kafka : %s : %s ", rd_kafka_err2str(kafkaError), reason );
+			break;
 	}
 }
 
@@ -53,43 +82,272 @@ static void pollThreadWrapper(Kafka *kafka)
  * @param brokers	List of bootstrap brokers to contact
  * @param topic		THe Kafka topic to publish on
  */
-Kafka::Kafka(const string& brokers, const string& topic) :
-	m_topic(topic), m_running(true), m_objects(false)
+Kafka::Kafka(ConfigCategory*& configData ) : m_running(true), m_objects(false)
 {
-char	errstr[512];
+	try
+	{
+		m_error = false;
+		char	errstr[512];
+		m_topic = configData->getValue("topic");
+		m_conf = rd_kafka_conf_new();
 
-	m_conf = rd_kafka_conf_new();
-	if (rd_kafka_conf_set(m_conf, "bootstrap.servers", brokers.c_str(),
+		// Set basic configuration
+		applyConfig_Basic(configData);
+
+		string kafkaSecurityProtocol = configData->getValue("KafkaSecurityProtocol");
+
+		// Set SASL_PLAINTEXT configuration
+		if (kafkaSecurityProtocol == "SASL_PLAINTEXT")
+		{
+			applyConfig_SASL_PLAINTEXT(configData, kafkaSecurityProtocol);
+		}
+
+		// Set SSL configuration
+		if (kafkaSecurityProtocol == "SSL" || kafkaSecurityProtocol == "SASL_SSL")
+		{
+			applyConfig_SSL(configData, kafkaSecurityProtocol);
+		}
+
+		rd_kafka_conf_set_log_cb(m_conf, logCallback);
+
+		rd_kafka_conf_set_dr_msg_cb(m_conf, dr_msg_cb);
+		rd_kafka_conf_set_opaque(m_conf, this);
+		m_rk = rd_kafka_new(RD_KAFKA_PRODUCER, m_conf, errstr, sizeof(errstr));
+		if (!m_rk)
+		{
+			Logger::getLogger()->fatal(errstr);
+			throw exception();
+		}
+		m_rkt = rd_kafka_topic_new(m_rk, m_topic.c_str(), NULL);
+			if (!m_rkt) {
+					Logger::getLogger()->fatal("Failed to create topic object: %s\n",
+							rd_kafka_err2str(rd_kafka_last_error()));
+					rd_kafka_destroy(m_rk);
+					throw exception();
+			}
+		m_thread = new thread(pollThreadWrapper, this);
+	}
+	catch(std::exception &ex)
+	{
+		throw ex;
+	}
+
+}
+
+
+/**
+ * certificateStoreLocation
+ *
+ * Fetch certificate store location
+ *
+ * @returns Path for certificate store location
+ */
+string	Kafka::certificateStoreLocation()
+{
+	string storeLocation = {};
+	char* env = NULL;
+	env = getenv("FLEDGE_DATA");
+	if (env)
+	{
+		storeLocation = std::string(env) + "/etc/certs/";
+	}
+	else
+	{
+		env = getenv("FLEDGE_ROOT");
+		if (env)
+			storeLocation = std::string(env) + "/data/etc/certs/";
+		else
+			storeLocation = "/usr/local/fledge/data/etc/certs/";
+	}
+
+	return storeLocation;
+}
+
+/**
+ * applyConfig_Basic
+ *
+ * Setup basic kafka configuration
+ *
+ * @param configData	plugin configuration data
+ */
+
+void Kafka::applyConfig_Basic(ConfigCategory*& configData)
+{
+	char	errstr[512];
+	// SET Basic Config
+	if (rd_kafka_conf_set(m_conf, "bootstrap.servers", configData->getValue("brokers").c_str(),
                               errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
 		Logger::getLogger()->fatal(errstr);
+		rd_kafka_conf_destroy(m_conf);
 		throw exception();
 	}
+
 	if (rd_kafka_conf_set(m_conf, "request.required.acks", "all",
                               errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
 		Logger::getLogger()->fatal(errstr);
+		rd_kafka_conf_destroy(m_conf);
 		throw exception();
 	}
 
-	rd_kafka_conf_set_log_cb(m_conf, logCallback);
-
-	rd_kafka_conf_set_dr_msg_cb(m_conf, dr_msg_cb);
-	rd_kafka_conf_set_opaque(m_conf, this);
-	m_rk = rd_kafka_new(RD_KAFKA_PRODUCER, m_conf, errstr, sizeof(errstr));
-	if (!m_rk)
+	if (rd_kafka_conf_set(m_conf, "compression.codec", configData->getValue("compression").c_str(),
+                              errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
-		Logger::getLogger()->fatal(errstr);
+		// Get previous compression codec
+		char compressionCodec[32];
+		size_t length = sizeof(compressionCodec);
+		rd_kafka_conf_res_t res;
+		res = rd_kafka_conf_get(m_conf, "compression.codec", compressionCodec, &length);
+		
+		Logger::getLogger()->warn("Compression codec %s couldn't be set because %s. Continuing with %s compression", configData->getValue("compression").c_str(), errstr, compressionCodec);
+	}
+
+	// Set the error callback function
+	rd_kafka_conf_set_error_cb(m_conf, error_cb);
+}
+
+/**
+ * applyConfig_SASL_PLAINTEXT
+ *
+ * Setup SASL_PLAINTEXT kafka configuration
+ *
+ * @param configData	plugin configuration data
+ */
+
+void Kafka::applyConfig_SASL_PLAINTEXT(ConfigCategory*& configData, const string& kafkaSecurityProtocol)
+{
+	char	errstr[512];
+	// Set the security protocol
+	if (rd_kafka_conf_set(m_conf, "security.protocol", kafkaSecurityProtocol.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->fatal("Failed to set security protocol: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
 		throw exception();
 	}
-	m_rkt = rd_kafka_topic_new(m_rk, topic.c_str(), NULL);
-        if (!m_rkt) {
-                Logger::getLogger()->fatal("Failed to create topic object: %s\n",
-                        rd_kafka_err2str(rd_kafka_last_error()));
-                rd_kafka_destroy(m_rk);
-                throw exception();
-        }
-	m_thread = new thread(pollThreadWrapper, this);
+
+	// Set the security mechanisms
+	// TODO : FOGL-7945 - Implementation of following mechanisms is pending "GSSAPI", "OAUTHBEARER", "SCRAM-SHA-256", "SCRAM-SHA-512"
+	if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", "PLAIN", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->fatal("Failed to set security mechanism: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+
+	// Set SASL username
+	if (rd_kafka_conf_set(m_conf, "sasl.username", configData->getValue("KafkaUserID").c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->debug("Failed to set SASL user name: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+
+	// Set SASL password
+	if (rd_kafka_conf_set(m_conf, "sasl.password", configData->getValue("KafkaPassword").c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->debug("Failed to set SASL password: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+
+}
+
+/**
+ * applyConfig_SSL
+ *
+ * Setup SSL kafka configuration
+ *
+ * @param configData	plugin configuration data
+ */
+
+void Kafka::applyConfig_SSL(ConfigCategory*& configData, const string& kafkaSecurityProtocol)
+{
+	char	errstr[512];
+
+	// Set the security protocol
+	if (rd_kafka_conf_set(m_conf, "security.protocol", kafkaSecurityProtocol.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->fatal("Failed to set security protocol: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+
+	// Set the security mechanisms
+	if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", configData->getValue("KafkaSASLMechanism").c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->fatal("Failed to set security mechanism: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+	
+	// Set SASL username
+	if (rd_kafka_conf_set(m_conf, "sasl.username", configData->getValue("KafkaUserID").c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->debug("Failed to set SASL username: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+
+	// Set SASL password
+	if (rd_kafka_conf_set(m_conf, "sasl.password", configData->getValue("KafkaPassword").c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	{
+		Logger::getLogger()->debug("Failed to set SASL password: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+
+	// Get certificate store location
+	string storeLocation = {};
+	storeLocation = certificateStoreLocation();
+
+	// Set the SSL CA Location
+	if (!configData->getValue("SSL_CA_File").empty())
+	{
+		if (rd_kafka_conf_set(m_conf, "ssl.ca.location", (storeLocation + configData->getValue("SSL_CA_File")).c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+		{
+			Logger::getLogger()->fatal("Failed to set SSL CA location: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+	}
+	
+	// Set the SSL Certificate Location
+	if (!configData->getValue("SSL_CERT").empty())
+	{
+		if (rd_kafka_conf_set(m_conf, "ssl.certificate.location", (storeLocation + configData->getValue("SSL_CERT")).c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+		{
+			Logger::getLogger()->fatal("Failed to set SSL certificate location: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+	}
+
+	// Set the SSL Key Location
+	if (!configData->getValue("SSL_Keyfile").empty())
+	{
+		if (rd_kafka_conf_set(m_conf, "ssl.key.location", (storeLocation + configData->getValue("SSL_Keyfile")).c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+		{
+			Logger::getLogger()->fatal("Failed to set SSL key location: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+	}
+
+
+	// SET SSL password if provided
+	std::string sslPassword = configData->getValue("SSL_Password");
+	if (!sslPassword.empty())
+	{
+		// Set the SSL Key Location
+		if (rd_kafka_conf_set(m_conf, "ssl.key.password", sslPassword.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+		{
+			Logger::getLogger()->fatal("Failed to set SSL password: %s",errstr);
+			rd_kafka_conf_destroy(m_conf);
+			throw exception();
+		}
+	}
+
 }
 
 /**
@@ -170,15 +428,26 @@ Kafka::send(const vector<Reading *> readings)
 		payload << "{ \"asset\" : " << quote(assetName) << ", ";
 		payload << "\"timestamp\" : " << quote((*it)->getAssetDateUserTime(Reading::FMT_ISO8601MS, true)) << ", ";
 		vector<Datapoint *> datapoints = (*it)->getReadingData();
+		bool isPayloadToSend = false;
 		for (auto dit = datapoints.cbegin(); dit != datapoints.cend();
 					++dit)
 		{
+			DatapointValue dpv = (*dit)->getData();
+			DatapointValue::dataTagType dataType = dpv.getType();
+			if ( dataType == DatapointValue::T_IMAGE || dataType == DatapointValue::T_DATABUFFER )
+			{
+				// SKIP Image and databuffer type
+				Logger::getLogger()->info("Image and databuffer are not supported in kafka north implementation. Datapoint %s of asset %s has image/databuffer",(*dit)->getName().c_str(), assetName.c_str());
+				success();
+				continue;
+			}
+			isPayloadToSend = true;
 			if (dit != datapoints.cbegin())
 			{
 				payload << ",";
 			}
 			payload << quote((*dit)->getName());
-			DatapointValue dpv = (*dit)->getData();
+
 			switch (dpv.getType())
 			{
 				case DatapointValue::T_STRING:
@@ -210,16 +479,20 @@ Kafka::send(const vector<Reading *> readings)
 		
 		}
 		payload << "}";
-		Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
-		if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
-			(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+		if (isPayloadToSend)
 		{
-			Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
-			break;
+			Logger::getLogger()->debug("Kafka payload: '%s'", payload.str().c_str());
+			if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
+				(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
+			{
+				Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
+				break;
+			}
 		}
+
 		rd_kafka_poll(m_rk, 0);
 	}
-	while (rd_kafka_outq_len(m_rk) > 0)
+	while (rd_kafka_outq_len(m_rk) > 0 && !m_error)
 	{
 		rd_kafka_poll(m_rk, 0);
 		rd_kafka_flush(m_rk, 1000);
@@ -259,3 +532,4 @@ string Kafka::quote(const string& orig)
 	rval += "\"";
 	return rval;
 }
+

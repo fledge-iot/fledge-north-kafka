@@ -23,10 +23,26 @@
 
 set -e
 
+os_name=$(grep -o '^NAME=.*' /etc/os-release | cut -f2 -d\" | sed 's/"//g')
+os_version=$(grep -o '^VERSION_ID=.*' /etc/os-release | cut -f2 -d\" | sed 's/"//g')
+echo "Platform is ${os_name}, Version: ${os_version}"
 
-git clone https://github.com/edenhill/librdkafka.git --branch v1.8.2
+if [[ ( $os_name == *"Red Hat"* || $os_name == *"CentOS"* ) ]]; then
+    echo "Installing epel-release ..."
+    sudo yum -y install epel-release
+    echo "Installing openssl ..."
+    sudo yum install -y openssl
+
+elif apt --version 2>/dev/null; then
+    echo "Installing openssl ..."
+    sudo apt install -y openssl
+    echo "Installing  libssl-dev ..."
+    sudo apt install -y  libssl-dev
+fi
+
+git clone https://github.com/edenhill/librdkafka.git --branch v2.1.1
 cd librdkafka
-./configure
+./configure --enable-ssl
 make
 sudo make install
 cd ..

@@ -9,6 +9,8 @@ implementation is a simplified producer that sends all data on a single
 Kafka topic. Each message contains an asset name, timestamp and set of
 readings values as a JSON document.
 
+`See documentation <docs/index.rst>`_
+
 Copyright
 ---------
 
