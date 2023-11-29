@@ -79,7 +79,7 @@ static const char *default_config = QUOTE({
 		"order": "6",
 		"group": "Authentication",
 		"displayName": "SASL Mechanism",
-		"options" : ["PLAIN"],
+		"options" : ["PLAIN","SCRAM-SHA-256","SCRAM-SHA-512"],
 		"validity" : "KafkaSecurityProtocol == \"SASL_PLAINTEXT\" || KafkaSecurityProtocol == \"SASL_SSL\""
 		},
 	"KafkaUserID": {
