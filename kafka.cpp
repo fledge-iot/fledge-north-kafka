@@ -227,12 +227,12 @@ void Kafka::applyConfig_SASL_PLAINTEXT(ConfigCategory*& configData, const string
 	}
 
 	// Set the security mechanisms
-	// TODO : FOGL-7945 - Implementation of following mechanisms is pending "GSSAPI", "OAUTHBEARER"
-	std::string securityMechamism = configData->getValue("KafkaSASLMechanism");
+	// TODO : FOGL-8319 - Implementation of following mechanisms is pending "GSSAPI", "OAUTHBEARER"
+	std::string securityMechanism = configData->getValue("KafkaSASLMechanism");
 	if (kafkaSecurityProtocol == "PLAINTEXT" || kafkaSecurityProtocol == "SSL")
-		securityMechamism = "PLAIN";
+		securityMechanism = "PLAIN";
 
-	if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", securityMechamism.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+	if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", securityMechanism.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
 	{
 		Logger::getLogger()->fatal("Failed to set security mechanism: %s",errstr);
 		rd_kafka_conf_destroy(m_conf);
@@ -278,11 +278,11 @@ void Kafka::applyConfig_SSL(ConfigCategory*& configData, const string& kafkaSecu
 	}
 
 	// Set the security mechanisms
-	std::string securityMechamism = configData->getValue("KafkaSASLMechanism");
+	std::string securityMechanism = configData->getValue("KafkaSASLMechanism");
 	if (kafkaSecurityProtocol == "PLAINTEXT" || kafkaSecurityProtocol == "SSL")
-		securityMechamism = "PLAIN";
+		securityMechanism = "PLAIN";
 
-	if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", securityMechamism.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
+	if (rd_kafka_conf_set(m_conf, "sasl.mechanisms", securityMechanism.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) 
 	{
 		Logger::getLogger()->fatal("Failed to set security mechanism: %s",errstr);
 		rd_kafka_conf_destroy(m_conf);
