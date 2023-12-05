@@ -30,11 +30,11 @@ The configuration of the *Kafka* plugin is very simple, consisting of four param
 
   - **Security Protocol**: Security protocol to be used to connect to the kafka broker.
 
-  - **SASL Mechanism**: The authentication method to be used. The mechanisms supports are PLAIN, SCRAM-SHA-256 and SCRAM-SHA-512.
+  - **SASL Mechanism**: The authentication method to be used. The supported mechanisms are PLAIN, SCRAM-SHA-256 and SCRAM-SHA-512.
 
-  - **User ID**: The User ID to use when the Mechanism is set to SASL_PLAINTEXT or SASL_SSL.
+  - **User ID**: The User ID to use when the **SASL Mechanism** is set to SASL_PLAINTEXT or SASL_SSL.
 
-  - **Password**: The Password to use when the Mechanism is set to SASL_PLAINTEXT or SASL_SSL.
+  - **Password**: The Password to use when the **SASL Mechanism** is set to SASL_PLAINTEXT or SASL_SSL.
 
 +-----------+
 | |kafka_3| |
