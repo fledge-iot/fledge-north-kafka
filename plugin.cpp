@@ -210,6 +210,7 @@ PLUGIN_HANDLE plugin_start(PLUGIN_HANDLE handle)
 {
 	Kafka* kafka = (Kafka *)handle;
 	kafka->connect();
+	return handle;
 }
 /**
  * Send Readings data to historian server
