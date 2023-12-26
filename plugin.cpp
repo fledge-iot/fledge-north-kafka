@@ -202,6 +202,16 @@ PLUGIN_HANDLE plugin_init(ConfigCategory* configData)
 }
 
 /**
+ * Start plugin
+ *
+ *	@param handle	The plugin handle returned from plugin_init
+ */
+PLUGIN_HANDLE plugin_start(PLUGIN_HANDLE handle)
+{
+	Kafka* kafka = (Kafka *)handle;
+	kafka->connect();
+}
+/**
  * Send Readings data to historian server
  */
 uint32_t plugin_send(const PLUGIN_HANDLE handle,
