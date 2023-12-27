@@ -439,6 +439,8 @@ Kafka::pollThread()
 uint32_t
 Kafka::send(const vector<Reading *> readings)
 {
+
+	Logger::getLogger()->debug("Kafka send called");
 	m_sent = 0;
 	// Check if kafka connection and topic is valid
 	if (!m_rk && !m_rkt)
