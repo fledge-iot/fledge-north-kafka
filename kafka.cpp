@@ -84,6 +84,7 @@ static int stats_cb(rd_kafka_t *rk, char *json, size_t json_len, void *opaque)
 			}
 		}
 	}
+	return 0;
 }
 
 /**
