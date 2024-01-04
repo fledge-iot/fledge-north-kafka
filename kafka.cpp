@@ -66,6 +66,28 @@ static void error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque)
 }
 
 /**
+ *  Callback to check stats
+ */
+static int stats_cb(rd_kafka_t *rk, char *json, size_t json_len, void *opaque)
+{
+	Document d;
+	d.Parse(json);
+	if (!d.HasParseError())
+	{
+		for (auto& v : d["brokers"].GetObject())
+		{
+			std::string state = v.value["state"].GetString();
+			if (state == "UP")
+			{
+				Kafka *kafka = (Kafka *)opaque;
+				kafka->setErrorStatus(false);
+			}
+		}
+	}
+	return 0;
+}
+
+/**
  * C Wrapper for the polling thread that collects prodcer feedback
  */
 static void pollThreadWrapper(Kafka *kafka)
@@ -210,6 +232,15 @@ void Kafka::applyConfig_Basic(ConfigCategory*& configData)
 		
 		Logger::getLogger()->warn("Compression codec %s couldn't be set because %s. Continuing with %s compression", configData->getValue("compression").c_str(), errstr, compressionCodec);
 	}
+
+	if (rd_kafka_conf_set(m_conf, "statistics.interval.ms","2000",
+										errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+	{
+		Logger::getLogger()->debug("Failed to set statistics collection interval: %s",errstr);
+		rd_kafka_conf_destroy(m_conf);
+		throw exception();
+	}
+	rd_kafka_conf_set_stats_cb(m_conf, stats_cb);
 
 	// Set the error callback function
 	rd_kafka_conf_set_error_cb(m_conf, error_cb);
@@ -449,6 +480,13 @@ Kafka::send(const vector<Reading *> readings)
 		return m_sent;
 	}
 
+	//Check if previous errors status is cleared before sending to Kafka borker
+	if (m_error)
+	{
+		Logger::getLogger()->info("Data couldn't be sent to Kafka broker");
+		return m_sent;
+	}
+
 	int cnt = 0;
 	for (auto it = readings.cbegin(); it != readings.cend(); ++it)
 	{
@@ -515,6 +553,7 @@ Kafka::send(const vector<Reading *> readings)
 			if (rd_kafka_produce(m_rkt, RD_KAFKA_PARTITION_UA, RD_KAFKA_MSG_F_COPY,
 				(char *)payload.str().c_str(), payload.str().length(), NULL, 0, NULL) != 0)
 			{
+				setErrorStatus(true);
 				Logger::getLogger()->error("Failed to send data to Kafka: %s", strerror(errno));
 				break;
 			}
