@@ -27,6 +27,7 @@ class Kafka
 		uint32_t		send(const std::vector<Reading *> readings);
 		void			pollThread();
 		void			sendJSONObjects(bool arg) { m_objects = arg; };
+		void			connect();
 		inline void		success() { m_sent++; };
 		inline void		setErrorStatus(bool isError) { m_error = isError; };
 		static void 		logCallback(const rd_kafka_t *rk, int level, const char *facility, const char *buf);
